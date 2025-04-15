@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Scanner</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .sidebar-transition {
+            transition: transform 0.3s ease-in-out, width 0.3s ease-in-out, margin-left 0.3s ease-in-out;
+        }
+        
+        .content-transition {
+            transition: margin-left 0.3s ease-in-out, width 0.3s ease-in-out;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar-open {
+                transform: translateX(0);
+            }
+            
+            .sidebar-closed {
+                transform: translateX(-100%);
+            }
+        }
+
+        /* Active nav item styling */
+        .nav-item.active {
+            background-color: #f3f4f6;
+            color: #3b82f6;
+        }
+        .nav-item.active svg {
+            color: #3b82f6;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+    <header class="bg-white shadow-sm z-10">
+        <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex">
+                    <button id="sidebarToggle" class="inline-flex items-center justify-center p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500">
+                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                    <div class="flex-shrink-0 flex items-center ml-4">
+                        <span class="text-xl font-bold text-blue-600">Network Scanner</span>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <div class="ml-4 flex items-center md:ml-6">
+                        <button class="bg-white p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            <span class="sr-only">View notifications</span>
+                            <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="bg-white w-64 fixed h-full shadow-md z-20 sidebar-transition sidebar-open md:relative">
+            <div class="h-full overflow-y-auto">
+                <div class="px-4 py-5 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-lg font-medium text-gray-900">Navigation</h2>
+                        <button id="closeSidebar" class="md:hidden text-gray-500 hover:text-gray-700">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <nav class="mt-5 px-2 space-y-1">
+                    <!-- Dashboard -->
+                    <a href="/" class="nav-item group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900">
+                        <svg class="mr-3 h-5 w-5 text-gray-500 group-hover:text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                        </svg>
+                        Dashboard
+                    </a>
+                    
+                    <!-- Devices -->
+                    <a href="/devices" class="nav-item group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900">
+                        <svg class="mr-3 h-5 w-5 text-gray-500 group-hover:text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                        </svg>
+                        Devices
+                    </a>
+                    
+                    <!-- Port Scanner -->
+                    <a href="/port-scanner" class="nav-item group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900">
+                        <svg class="mr-3 h-5 w-5 text-gray-500 group-hover:text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                        </svg>
+                        Port Scanner
+                    </a>
+                    
+                    <!-- Vulnerability -->
+                    <a href="/vulnerability" class="nav-item group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900">
+                        <svg class="mr-3 h-5 w-5 text-gray-500 group-hover:text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        Vulnerability
+                    </a>
+                    
+                    <!-- WiFi Passwords -->
+                    <a href="/wifi" class="nav-item group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900">
+                        <svg class="mr-3 h-5 w-5 text-gray-500 group-hover:text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+                        </svg>
+                        WiFi Passwords
+                    </a>
+                    
+                    <!-- Traffic -->
+                    <a href="/traffic" class="nav-item group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900">
+                        <svg class="mr-3 h-5 w-5 text-gray-500 group-hover:text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                        </svg>
+                        Traffic
+                    </a>
+                    
+                    <!-- Scan History -->
+                    <a href="/scan-history" class="nav-item group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900">
+                        <svg class="mr-3 h-5 w-5 text-gray-500 group-hover:text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                        Scan History
+                    </a>
+                </nav>
+                
+                <!-- System Status -->
+                <div class="mt-10 px-4">
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h3 class="text-sm font-medium text-gray-700">System Status</h3>
+                        <div class="mt-2 text-sm text-gray-500">
+                            <div class="flex justify-between mb-1">
+                                <span>CPU Usage</span>
+                                <span id="cpuUsage">--</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-1.5 mb-2">
+                                <div id="cpuBar" class="bg-blue-600 h-1.5 rounded-full" style="width: 0%"></div>
+                            </div>
+                            
+                            <div class="flex justify-between mb-1">
+                                <span>Memory</span>
+                                <span id="memoryUsage">--</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-1.5 mb-2">
+                                <div id="memoryBar" class="bg-green-600 h-1.5 rounded-full" style="width: 0%"></div>
+                            </div>
+                            
+                            <div class="flex justify-between mb-1">
+                                <span>Disk</span>
+                                <span id="diskUsage">--</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-1.5">
+                                <div id="diskBar" class="bg-purple-600 h-1.5 rounded-full" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Overlay for mobile -->
+        <div id="sidebarOverlay" class="fixed inset-0 bg-gray-600 bg-opacity-75 z-10 hidden md:hidden"></div>
+
+        <!-- Main content -->
+        <main id="mainContent" class="flex-1 overflow-auto content-transition">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+    
+    <footer class="bg-white shadow-inner mt-auto py-4">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <p class="text-center text-gray-500 text-sm">
+                Network Scanner &copy; 2023. All rights reserved.
+            </p>
+        </div>
+    </footer>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const closeSidebar = document.getElementById('closeSidebar');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+            const mainContent = document.getElementById('mainContent');
+            
+            // Function to toggle sidebar
+            function toggleSidebar() {
+                if (sidebar.classList.contains('sidebar-open')) {
+                    sidebar.classList.remove('sidebar-open');
+                    sidebar.classList.add('sidebar-closed');
+                    sidebarOverlay.classList.add('hidden');
+                } else {
+                    sidebar.classList.remove('sidebar-closed');
+                    sidebar.classList.add('sidebar-open');
+                    sidebarOverlay.classList.remove('hidden');
+                }
+            }
+            
+            // Toggle sidebar on button click
+            sidebarToggle.addEventListener('click', toggleSidebar);
+            
+            // Close sidebar on close button click
+            closeSidebar.addEventListener('click', toggleSidebar);
+            
+            // Close sidebar when clicking overlay
+            sidebarOverlay.addEventListener('click', toggleSidebar);
+            
+            // Highlight current page in navigation
+            const currentPath = window.location.pathname;
+            const navLinks = document.querySelectorAll('.nav-item');
+            
+            navLinks.forEach(link => {
+                if (link.getAttribute('href') === currentPath) {
+                    link.classList.add('active');
+                }
+            });
+            
+            // Simulate system status updates with progress bars
+            function updateSystemStatus() {
+                const cpu = Math.floor(Math.random() * 100);
+                const memory = Math.floor(Math.random() * 100);
+                const disk = Math.floor(Math.random() * 100);
+                
+                document.getElementById('cpuUsage').textContent = `${cpu}%`;
+                document.getElementById('memoryUsage').textContent = `${memory}%`;
+                document.getElementById('diskUsage').textContent = `${disk}%`;
+                
+                document.getElementById('cpuBar').style.width = `${cpu}%`;
+                document.getElementById('memoryBar').style.width = `${memory}%`;
+                document.getElementById('diskBar').style.width = `${disk}%`;
+                
+                // Change color based on usage level
+                document.getElementById('cpuBar').className = `h-1.5 rounded-full ${cpu > 80 ? 'bg-red-600' : cpu > 60 ? 'bg-yellow-500' : 'bg-blue-600'}`;
+                document.getElementById('memoryBar').className = `h-1.5 rounded-full ${memory > 80 ? 'bg-red-600' : memory > 60 ? 'bg-yellow-500' : 'bg-green-600'}`;
+                document.getElementById('diskBar').className = `h-1.5 rounded-full ${disk > 80 ? 'bg-red-600' : disk > 60 ? 'bg-yellow-500' : 'bg-purple-600'}`;
+            }
+            
+            // Update system status initially and every 5 seconds
+            updateSystemStatus();
+            setInterval(updateSystemStatus, 5000);
+        });
+    </script>
+</body>
+</html>

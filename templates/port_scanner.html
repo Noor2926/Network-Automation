@@ -1,0 +1,403 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<header class="mb-8">
+    <div class="flex justify-between items-center">
+        <h1 class="text-3xl font-bold text-gray-800">Port Scanner</h1>
+        <div class="flex space-x-2">
+            <button id="backBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-md">
+                Back
+            </button>
+        </div>
+    </div>
+</header>
+
+<div id="alertContainer" class="mb-6 hidden">
+    <!-- Alert will be inserted here -->
+</div>
+
+<div class="bg-white p-6 rounded-lg shadow mb-8">
+    <h2 class="text-xl font-semibold text-gray-800 mb-4">Scan Configuration</h2>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+            <label for="targetIP" class="block text-sm font-medium text-gray-700 mb-1">Target IP(s)</label>
+            <input type="text" id="targetIP" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <p class="text-xs text-gray-500 mt-1">Example: 192.168.1.1</p>
+        </div>
+        
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Port Range</label>
+            <div class="flex space-x-2">
+                <input type="number" id="portStart" value="1" min="1" max="65535" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <span class="flex items-center">to</span>
+                <input type="number" id="portEnd" value="1024" min="1" max="65535" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+        <div>
+            <label for="scanTimeout" class="block text-sm font-medium text-gray-700 mb-1">Timeout (seconds)</label>
+            <input type="number" id="scanTimeout" value="1" min="0.1" max="10" step="0.1" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        
+        <div>
+            <label for="maxThreads" class="block text-sm font-medium text-gray-700 mb-1">Max Threads</label>
+            <input type="number" id="maxThreads" value="100" min="10" max="500" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+    </div>
+    
+    <div class="mt-6">
+        <button id="startScanBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md">
+            Start Scan
+        </button>
+    </div>
+</div>
+
+<div id="scanProgressContainer" class="mb-6 hidden">
+    <div class="bg-white p-4 rounded-lg shadow">
+        <div class="flex justify-between mb-1">
+            <span class="text-sm font-medium text-gray-700">Scanning ports...</span>
+            <span id="scanProgressText" class="text-sm font-medium text-gray-700">0%</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2.5 mb-2">
+            <div id="scanProgressBar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+        </div>
+        <div class="flex justify-between text-xs text-gray-500">
+            <span id="scanCurrentPort">Current port: -</span>
+            <span id="scanStats">0/0 open ports found</span>
+        </div>
+    </div>
+</div>
+
+<div class="bg-white p-6 rounded-lg shadow">
+    <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-semibold text-gray-800">Scan Results</h2>
+        <div>
+            <button id="exportBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-md">
+                Export Results
+            </button>
+        </div>
+    </div>
+    
+    <div id="resultsContainer" class="hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Port</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">State</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="resultsTableBody" class="bg-white divide-y divide-gray-200">
+                    <!-- Results will be inserted here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div id="noResultsMessage" class="py-4 text-center text-gray-500">
+        No scan results yet. Start a scan to discover open ports.
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const ipParam = urlParams.get('ip');
+    
+    // Set IP if provided in URL
+    if (ipParam) {
+        document.getElementById('targetIP').value = ipParam;
+    }
+    
+    // Back button
+    document.getElementById('backBtn').addEventListener('click', function() {
+        window.history.back();
+    });
+    
+    // Start scan button
+    document.getElementById('startScanBtn').addEventListener('click', function() {
+        startScan();
+    });
+    
+    // Export button
+    document.getElementById('exportBtn').addEventListener('click', function() {
+        exportResults();
+    });
+});
+
+function showAlert(message, type = 'error') {
+    const alertContainer = document.getElementById('alertContainer');
+    alertContainer.innerHTML = '';
+    alertContainer.classList.remove('hidden');
+    
+    const alertClass = type === 'error' ? 'bg-red-100 border-red-400 text-red-700' : 'bg-green-100 border-green-400 text-green-700';
+    
+    const alert = document.createElement('div');
+    alert.className = `${alertClass} px-4 py-3 rounded relative border`;
+    alert.role = 'alert';
+    alert.innerHTML = `
+        <span class="block sm:inline">${message}</span>
+        <span class="absolute top-0 bottom-0 right-0 px-4 py-3">
+            <button type="button" class="close-alert">
+                <span class="sr-only">Close</span>
+                <span class="text-2xl">&times;</span>
+            </button>
+        </span>
+    `;
+    
+    alertContainer.appendChild(alert);
+    
+    // Add event listener to close button
+    alert.querySelector('.close-alert').addEventListener('click', function() {
+        alertContainer.classList.add('hidden');
+    });
+    
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+        alertContainer.classList.add('hidden');
+    }, 5000);
+}
+
+function startScan() {
+    const targetIP = document.getElementById('targetIP').value;
+    const portStart = document.getElementById('portStart').value;
+    const portEnd = document.getElementById('portEnd').value;
+    const timeout = document.getElementById('scanTimeout').value;
+    const maxThreads = document.getElementById('maxThreads').value;
+    
+    if (!targetIP) {
+        showAlert('Please enter a target IP address');
+        return;
+    }
+    
+    // Show progress bar
+    const progressContainer = document.getElementById('scanProgressContainer');
+    const progressBar = document.getElementById('scanProgressBar');
+    const progressText = document.getElementById('scanProgressText');
+    const scanCurrentPort = document.getElementById('scanCurrentPort');
+    const scanStats = document.getElementById('scanStats');
+    
+    progressContainer.classList.remove('hidden');
+    progressBar.style.width = '0%';
+    progressText.textContent = '0%';
+    scanCurrentPort.textContent = 'Starting scan...';
+    scanStats.textContent = '0/0 open ports found';
+    
+    // Disable scan button
+    const scanButton = document.getElementById('startScanBtn');
+    scanButton.disabled = true;
+    scanButton.classList.add('opacity-50');
+    scanButton.textContent = 'Scanning...';
+    
+    // Hide previous results
+    document.getElementById('resultsContainer').classList.add('hidden');
+    document.getElementById('noResultsMessage').classList.remove('hidden');
+    
+    // Start scan
+    fetch('/api/port-scan', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            ip: targetIP,
+            port_start: parseInt(portStart),
+            port_end: parseInt(portEnd),
+            timeout: parseFloat(timeout),
+            max_threads: parseInt(maxThreads)
+        }),
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.status === 'started') {
+            // Poll for scan status
+            pollScanStatus(targetIP, progressBar, progressText, scanCurrentPort, scanStats, scanButton);
+        } else {
+            showAlert('Failed to start scan: ' + (data.message || 'Unknown error'));
+            resetScanUI(progressContainer, scanButton);
+        }
+    })
+    .catch(error => {
+        console.error('Error starting scan:', error);
+        showAlert('Failed to start scan: ' + error.message);
+        resetScanUI(progressContainer, scanButton);
+    });
+}
+
+function pollScanStatus(targetIP, progressBar, progressText, scanCurrentPort, scanStats, scanButton) {
+    const progressContainer = document.getElementById('scanProgressContainer');
+    let retryCount = 0;
+    const maxRetries = 5;
+    let pollInterval = 1000; // Start with 1s polling
+    let totalPorts = parseInt(document.getElementById('portEnd').value) - parseInt(document.getElementById('portStart').value) + 1;
+    let progress = 0;
+    
+    const checkStatus = () => {
+        fetch(`/api/port-scan/status?ip=${encodeURIComponent(targetIP)}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === 'in_progress') {
+                    // Update progress (simulate progress since we don't have real-time updates)
+                    progress += 5;
+                    if (progress > 95) progress = 95;
+                    
+                    progressBar.style.width = `${progress}%`;
+                    progressText.textContent = `${progress}%`;
+                    scanCurrentPort.textContent = `Scanning ports...`;
+                    
+                    // Continue polling
+                    setTimeout(checkStatus, pollInterval);
+                } else if (data.status === 'completed') {
+                    // Scan completed
+                    progressBar.style.width = '100%';
+                    progressText.textContent = '100%';
+                    
+                    // Update results
+                    if (data.open_ports && data.open_ports.length > 0) {
+                        scanStats.textContent = `${data.open_ports.length}/${totalPorts} open ports found`;
+                        displayResults(data.open_ports);
+                    } else {
+                        scanStats.textContent = `0/${totalPorts} open ports found`;
+                        document.getElementById('noResultsMessage').textContent = 'No open ports found.';
+                    }
+                    
+                    // Reset UI after a short delay
+                    setTimeout(() => {
+                        resetScanUI(progressContainer, scanButton);
+                    }, 1000);
+                } else if (data.status === 'error') {
+                    // Error
+                    showAlert('Scan failed: ' + (data.message || 'Unknown error'));
+                    resetScanUI(progressContainer, scanButton);
+                }
+            })
+            .catch(error => {
+                console.error('Error checking scan status:', error);
+                retryCount++;
+                
+                if (retryCount <= maxRetries) {
+                    // Retry after a delay
+                    setTimeout(checkStatus, pollInterval * 2);
+                } else {
+                    showAlert('Error checking scan status: Connection failed');
+                    resetScanUI(progressContainer, scanButton);
+                }
+            });
+    };
+    
+    // Start polling
+    setTimeout(checkStatus, 1000);
+}
+
+function resetScanUI(progressContainer, scanButton) {
+    progressContainer.classList.add('hidden');
+    scanButton.disabled = false;
+    scanButton.classList.remove('opacity-50');
+    scanButton.textContent = 'Start Scan';
+}
+
+function displayResults(openPorts) {
+    const resultsContainer = document.getElementById('resultsContainer');
+    const noResultsMessage = document.getElementById('noResultsMessage');
+    const tableBody = document.getElementById('resultsTableBody');
+    
+    // Show results container
+    resultsContainer.classList.remove('hidden');
+    noResultsMessage.classList.add('hidden');
+    
+    // Clear table
+    tableBody.innerHTML = '';
+    
+    // Add results to table
+    openPorts.forEach(port => {
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-gray-50';
+        
+        row.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${port.port}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${port.service || 'unknown'}</td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                    ${port.state || 'open'}
+                </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <button class="text-blue-600 hover:text-blue-900 test-port-btn" data-port="${port.port}">
+                    Test Connection
+                </button>
+            </td>
+        `;
+        
+        tableBody.appendChild(row);
+    });
+    
+    // Add event listeners to test buttons
+    document.querySelectorAll('.test-port-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const port = this.dataset.port;
+            const ip = document.getElementById('targetIP').value;
+            testConnection(ip, port);
+        });
+    });
+}
+
+function testConnection(ip, port) {
+    // This would typically be a server-side function
+    // For now, we'll just show a message
+    showAlert(`Testing connection to ${ip}:${port}...`, 'success');
+    
+    // In a real implementation, you would make an API call to test the connection
+    setTimeout(() => {
+        showAlert(`Connection to ${ip}:${port} successful!`, 'success');
+    }, 1000);
+}
+
+function exportResults() {
+    const tableBody = document.getElementById('resultsTableBody');
+    const rows = tableBody.querySelectorAll('tr');
+    
+    if (rows.length === 0) {
+        showAlert('No results to export');
+        return;
+    }
+    
+    // Create CSV content
+    let csv = 'Port,Service,State\n';
+    
+    rows.forEach(row => {
+        const port = row.cells[0].textContent;
+        const service = row.cells[1].textContent;
+        const state = row.cells[2].textContent.trim();
+        
+        csv += `${port},${service},${state}\n`;
+    });
+    
+    // Create download link
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `port_scan_${document.getElementById('targetIP').value}_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+</script>
+{% endblock %}

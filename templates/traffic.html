@@ -1,0 +1,259 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<header class="mb-8">
+    <div class="flex justify-between items-center">
+        <h1 class="text-3xl font-bold text-gray-800">Traffic Monitor</h1>
+        <div class="flex space-x-2">
+            <button id="helpBtn" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Help
+            </button>
+        </div>
+    </div>
+</header>
+
+<!-- Capture Controls -->
+<div class="bg-white p-4 rounded-lg shadow mb-6">
+    <h2 class="text-lg font-semibold mb-4">Capture Configuration</h2>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+            <label for="interfaceSelect" class="block text-sm font-medium text-gray-700 mb-1">Network Interface</label>
+            <select id="interfaceSelect" class="w-full p-2 border border-gray-300 rounded-md">
+                <option value="">Loading interfaces...</option>
+            </select>
+        </div>
+        
+        <div>
+            <label for="filterInput" class="block text-sm font-medium text-gray-700 mb-1">Capture Filter (BPF Syntax)</label>
+            <input type="text" id="filterInput" placeholder="e.g., tcp port 80" class="w-full p-2 border border-gray-300 rounded-md">
+            <p class="text-xs text-gray-500 mt-1">Leave empty to capture all traffic</p>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+            <label for="maxPacketsInput" class="block text-sm font-medium text-gray-700 mb-1">Max Packets to Store</label>
+            <input type="number" id="maxPacketsInput" value="1000" min="100" max="10000" class="w-full p-2 border border-gray-300 rounded-md">
+        </div>
+    </div>
+    
+    <div class="flex justify-end space-x-2">
+        <button id="startCaptureBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md">
+            Start Capture
+        </button>
+        <button id="stopCaptureBtn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md opacity-50" disabled>
+            Stop Capture
+        </button>
+    </div>
+</div>
+
+<!-- Status Bar -->
+<div id="captureStatus" class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded hidden">
+    <div class="flex items-center">
+        <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-6 w-6 mr-3"></div>
+        <div>
+            <p class="font-medium">Capturing network traffic</p>
+            <p id="captureStats" class="text-sm">Packets: 0 | Duration: 0s | Rate: 0 B/s</p>
+        </div>
+    </div>
+</div>
+
+<!-- Traffic Statistics -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <!-- Traffic Overview -->
+    <div class="bg-white p-4 rounded-lg shadow">
+        <h2 class="text-lg font-semibold mb-4">Traffic Overview</h2>
+        
+        <div class="grid grid-cols-2 gap-4">
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <div class="text-sm text-gray-500">Packets Captured</div>
+                <div id="packetCount" class="text-2xl font-bold">0</div>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <div class="text-sm text-gray-500">Data Transferred</div>
+                <div id="dataTransferred" class="text-2xl font-bold">0 B</div>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <div class="text-sm text-gray-500">Transfer Rate</div>
+                <div id="transferRate" class="text-2xl font-bold">0 B/s</div>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <div class="text-sm text-gray-500">Active Connections</div>
+                <div id="activeConnections" class="text-2xl font-bold">0</div>
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <h3 class="text-md font-medium mb-2">Protocol Distribution</h3>
+            <div id="protocolDistribution" class="space-y-2">
+                <div class="flex items-center">
+                    <div class="w-24 text-sm">No data</div>
+                    <div class="flex-1 bg-gray-200 rounded-full h-2"></div>
+                    <div class="w-12 text-right text-sm">0%</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Top Talkers -->
+    <div class="bg-white p-4 rounded-lg shadow">
+        <h2 class="text-lg font-semibold mb-4">Top Talkers</h2>
+        
+        <div class="mb-4">
+            <h3 class="text-md font-medium mb-2">Top Source IPs</h3>
+            <div id="topSources" class="space-y-2">
+                <div class="text-sm text-gray-500 text-center py-2">No data available</div>
+            </div>
+        </div>
+        
+        <div>
+            <h3 class="text-md font-medium mb-2">Top Destination IPs</h3>
+            <div id="topDestinations" class="space-y-2">
+                <div class="text-sm text-gray-500 text-center py-2">No data available</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Packet List -->
+<div class="bg-white p-4 rounded-lg shadow mb-6">
+    <div class="flex justify-between items-center mb-4">
+        <h2 class="text-lg font-semibold">Packet Capture</h2>
+        <button id="clearCaptureBtn" class="text-sm text-blue-600 hover:text-blue-800">Clear</button>
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead>
+                <tr>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Destination</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Protocol</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Length</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Info</th>
+                </tr>
+            </thead>
+            <tbody id="packetList" class="divide-y divide-gray-200">
+                <tr>
+                    <td colspan="7" class="px-4 py-4 text-sm text-center text-gray-500">
+                        No packets captured. Start a capture to see packets.
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Connections -->
+<div class="bg-white p-4 rounded-lg shadow">
+    <h2 class="text-lg font-semibold mb-4">Active Connections</h2>
+    
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead>
+                <tr>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Destination</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Protocol</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Packets</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bytes</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
+                </tr>
+            </thead>
+            <tbody id="connectionsList" class="divide-y divide-gray-200">
+                <tr>
+                    <td colspan="6" class="px-4 py-4 text-sm text-center text-gray-500">
+                        No active connections. Start a capture to see connections.
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Help Modal -->
+<div id="helpModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+        <div class="p-4 border-b border-gray-200 flex justify-between items-center">
+            <h3 class="text-lg font-semibold">Traffic Monitor Help</h3>
+            <button id="closeHelpModal" class="text-gray-500 hover:text-gray-700">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <div class="p-4">
+            <div class="space-y-4">
+                <div>
+                    <h4 class="font-medium text-lg">Getting Started</h4>
+                    <p class="text-gray-600">The Traffic Monitor allows you to capture and analyze network traffic on your selected interface. Follow these steps to begin:</p>
+                    <ol class="list-decimal list-inside mt-2 space-y-1 text-gray-600">
+                        <li>Select a network interface from the dropdown menu</li>
+                        <li>Optionally, enter a capture filter using BPF syntax</li>
+                        <li>Click "Start Capture" to begin monitoring traffic</li>
+                        <li>View real-time statistics and packet information</li>
+                        <li>Click "Stop Capture" when finished</li>
+                    </ol>
+                </div>
+                
+                <div>
+                    <h4 class="font-medium text-lg">Capture Filters</h4>
+                    <p class="text-gray-600">You can use Berkeley Packet Filter (BPF) syntax to filter the captured packets. Here are some examples:</p>
+                    <ul class="list-disc list-inside mt-2 space-y-1 text-gray-600">
+                        <li><code class="bg-gray-100 px-1 rounded">tcp port 80</code> - Capture only HTTP traffic</li>
+                        <li><code class="bg-gray-100 px-1 rounded">host 192.168.1.1</code> - Capture traffic to/from a specific IP</li>
+                        <li><code class="bg-gray-100 px-1 rounded">udp</code> - Capture only UDP traffic</li>
+                        <li><code class="bg-gray-100 px-1 rounded">port 53</code> - Capture DNS traffic</li>
+                        <li><code class="bg-gray-100 px-1 rounded">icmp</code> - Capture only ICMP (ping) traffic</li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="font-medium text-lg">Understanding the Interface</h4>
+                    <p class="text-gray-600">The Traffic Monitor interface is divided into several sections:</p>
+                    <ul class="list-disc list-inside mt-2 space-y-1 text-gray-600">
+                        <li><strong>Traffic Overview</strong> - Shows summary statistics of captured traffic</li>
+                        <li><strong>Top Talkers</strong> - Displays the most active source and destination IP addresses</li>
+                        <li><strong>Packet Capture</strong> - Lists all captured packets with details</li>
+                        <li><strong>Active Connections</strong> - Shows current network connections</li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="font-medium text-lg">Troubleshooting</h4>
+                    <p class="text-gray-600">If you encounter issues with the Traffic Monitor:</p>
+                    <ul class="list-disc list-inside mt-2 space-y-1 text-gray-600">
+                        <li>Ensure you have administrator/root privileges to capture packets</li>
+                        <li>Verify that Npcap or libpcap is properly installed on your system</li>
+                        <li>Try selecting a different network interface</li>
+                        <li>Disable any security software that might block packet capture</li>
+                        <li>Check the application logs for detailed error messages</li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="font-medium text-lg">Performance Considerations</h4>
+                    <p class="text-gray-600">Capturing network traffic can be resource-intensive. To optimize performance:</p>
+                    <ul class="list-disc list-inside mt-2 space-y-1 text-gray-600">
+                        <li>Use specific capture filters to reduce the amount of captured traffic</li>
+                        <li>Limit the maximum number of stored packets</li>
+                        <li>For high-traffic networks, increase the packet buffer size</li>
+                        <li>Close the application when not in use to free system resources</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="p-4 border-t border-gray-200 flex justify-end">
+            <button id="closeHelpBtn" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
