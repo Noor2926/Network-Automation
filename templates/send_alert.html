@@ -1,0 +1,137 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="bg-white p-6 rounded-lg shadow hover-shadow transition-shadow">
+    <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-crimson mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+            </svg>
+            <h2 class="text-xl font-semibold text-gray-800">Send Network Alerts</h2>
+        </div>
+    </div>
+    
+    <div class="mb-6">
+        <p class="text-gray-600">Enter email addresses and/or phone numbers to send network security alerts.</p>
+    </div>
+
+    <form id="alertForm" class="space-y-6">
+
+        <div>
+            <button type="submit" id="sendAlertBtn" class="w-full bg-crimson hover:bg-crimson-dark text-white px-4 py-2 rounded-md transition-colors focus:ring-2 focus:ring-crimson focus:ring-offset-2">
+                Send Alerts
+            </button>
+        </div>
+    </form>
+
+    <div id="alertStatus" class="mt-4 hidden">
+        <div id="statusMessage" class="p-4 rounded-md"></div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const alertForm = document.getElementById('alertForm');
+    const sendAlertBtn = document.getElementById('sendAlertBtn');
+    const alertStatus = document.getElementById('alertStatus');
+    const statusMessage = document.getElementById('statusMessage');
+    const messageInput = document.getElementById('message');
+    const charCount = document.getElementById('charCount');
+
+    // Update character count for SMS
+    messageInput.addEventListener('input', function() {
+        const length = messageInput.value.length;
+        charCount.textContent = `${length}/160 characters`;
+        if (length > 160) {
+            charCount.classList.remove('text-gray-500');
+            charCount.classList.add('text-red-600');
+        } else {
+            charCount.classList.remove('text-red-600');
+            charCount.classList.add('text-gray-500');
+        }
+    });
+
+    alertForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        sendAlerts();
+    });
+
+    function sendAlerts() {
+        const emails = document.getElementById('emails').value.trim();
+        const phones = document.getElementById('phones').value.trim();
+        const message = document.getElementById('message').value.trim();
+
+        // Validation
+        if (!emails && !phones) {
+            showStatus('error', 'Please provide at least one email address or phone number.');
+            return;
+        }
+
+        if (!message) {
+            showStatus('error', 'Please provide an alert message.');
+            return;
+        }
+
+        if (message.length > 160) {
+            showStatus('error', 'Alert message exceeds 160 characters for SMS.');
+            return;
+        }
+
+        // Show loading state
+        sendAlertBtn.disabled = true;
+        sendAlertBtn.textContent = 'Sending...';
+        alertStatus.classList.add('hidden');
+
+        // Prepare data
+        const data = {
+            emails: emails.split(/[\n,]+/).map(email => email.trim()).filter(email => email),
+            phones: phones.split(/[\n,]+/).map(phone => phone.trim()).filter(phone => phone),
+            message: message
+        };
+
+        fetch('/api/alerts/send', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'success') {
+                showStatus('success', data.message || 'Alerts sent successfully!');
+                alertForm.reset();
+                charCount.textContent = '0/160 characters';
+                charCount.classList.remove('text-red-600');
+                charCount.classList.add('text-gray-500');
+            } else {
+                showStatus('error', data.message || 'Failed to send alerts.');
+            }
+        })
+        .catch(error => {
+            console.error('Error sending alerts:', error);
+            showStatus('error', 'Failed to send alerts: ' + error.message);
+        })
+        .finally(() => {
+            sendAlertBtn.disabled = false;
+            sendAlertBtn.textContent = 'Send Alerts';
+        });
+    }
+
+    function showStatus(type, message) {
+        alertStatus.classList.remove('hidden');
+        statusMessage.className = `p-4 rounded-md ${type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`;
+        statusMessage.textContent = message;
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            alertStatus.classList.add('hidden');
+        }, 5000);
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,801 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<header class="mb-8">
+    <div class="flex justify-between items-center">
+        <h1 class="text-3xl font-bold text-gray-800">Devices</h1>
+        <div class="flex space-x-2">
+            <button id="refreshBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-md">
+                Refresh
+            </button>
+            <button id="scanBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+                Scan Network
+            </button>
+        </div>
+    </div>
+</header>
+
+<div id="alertContainer" class="mb-6 hidden">
+    <!-- Alert will be inserted here -->
+</div>
+
+<div id="scanProgressContainer" class="mb-6 hidden">
+    <div class="bg-white p-4 rounded-lg shadow">
+        <div class="flex justify-between mb-1">
+            <span class="text-sm font-medium text-gray-700">Scanning network...</span>
+            <span id="scanProgressText" class="text-sm font-medium text-gray-700">0%</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2.5 mb-2">
+            <div id="scanProgressBar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+        </div>
+        <div class="flex justify-between text-xs text-gray-500">
+            <span id="scanCurrentIP">Current IP: -</span>
+            <span id="scanStats">0 active devices found</span>
+        </div>
+    </div>
+</div>
+
+<div class="bg-white p-6 rounded-lg shadow mb-8">
+    <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-semibold text-gray-800">Network Devices</h2>
+        <div class="flex space-x-2">
+            <div class="relative">
+                <input type="text" id="deviceSearch" placeholder="Search devices..." class="border border-gray-300 rounded-md pl-3 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <select id="statusFilter" class="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="all">All Status</option>
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Address</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">MAC Address</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hostname</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendor</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="deviceTableBody" class="bg-white divide-y divide-gray-200">
+                <!-- Devices will be inserted here -->
+                <tr id="noDevicesRow">
+                    <td colspan="6" class="px-6 py-4 text-center text-gray-500">No devices found. Scanning network...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="bg-white p-6 rounded-lg shadow">
+    <h2 class="text-xl font-semibold text-gray-800 mb-4">Scan Settings</h2>
+    
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div>
+            <label for="ipRange" class="block text-sm font-medium text-gray-700 mb-1">IP Range</label>
+            <input type="text" id="ipRange" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <p class="text-xs text-gray-500 mt-1">Examples: 192.168.1.0/24, 10.0.0.1-254</p>
+        </div>
+        
+        <div>
+            <label for="scanTimeout" class="block text-sm font-medium text-gray-700 mb-1">Timeout (seconds)</label>
+            <input type="number" id="scanTimeout" value="0.5" min="0.1" max="5" step="0.1" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <p class="text-xs text-gray-500 mt-1">Lower = faster but may miss devices</p>
+        </div>
+        
+        <div>
+            <label for="maxThreads" class="block text-sm font-medium text-gray-700 mb-1">Max Threads</label>
+            <input type="number" id="maxThreads" value="200" min="10" max="500" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <p class="text-xs text-gray-500 mt-1">Higher = faster but uses more resources</p>
+        </div>
+        
+        <div class="flex items-end">
+            <button id="startScanBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md">
+                Start Scan
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Device Config Modal -->
+<div id="deviceConfigModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-lg">
+        <!-- Modal Header -->
+        <div class="bg-gray-100 rounded-t-lg px-6 py-4 flex items-center justify-between">
+            <h3 id="deviceConfigTitle" class="text-lg font-semibold text-gray-800">Device Configuration</h3>
+            <button id="closeDeviceConfigModal" class="text-gray-500 hover:text-gray-700 focus:outline-none">
+                X
+            </button>
+        </div>
+        
+        <!-- Modal Body -->
+        <div class="px-6 py-4">
+            <div class="mb-4 flex items-center">
+                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                    <span class="text-blue-600 font-bold">D</span>
+                </div>
+                <div>
+                    <h4 class="text-sm font-medium text-gray-500">Device</h4>
+                    <p id="deviceConfigIP" class="text-base font-semibold text-gray-900">192.168.1.1</p>
+                </div>
+            </div>
+            
+            <!-- Tabs -->
+            <div class="border-b border-gray-200 mb-4">
+                <nav class="-mb-px flex space-x-6" aria-label="Tabs">
+                    <button id="infoTabBtn" class="tab-btn border-blue-500 text-blue-600 whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm">
+                        Information
+                    </button>
+                    <button id="pingTabBtn" class="tab-btn border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm">
+                        Ping
+                    </button>
+                </nav>
+            </div>
+            
+            <!-- Tab Content -->
+            <div id="tabContent" class="mb-4">
+                <!-- Info Tab -->
+                <div id="infoTab" class="tab-content">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <h5 class="text-xs font-medium text-gray-500 mb-1">IP Address</h5>
+                            <p id="infoIP" class="text-sm font-medium text-gray-900">192.168.1.1</p>
+                        </div>
+                        <div>
+                            <h5 class="text-xs font-medium text-gray-500 mb-1">MAC Address</h5>
+                            <p id="infoMAC" class="text-sm font-medium text-gray-900">00:00:00:00:00:00</p>
+                        </div>
+                        <div>
+                            <h5 class="text-xs font-medium text-gray-500 mb-1">Hostname</h5>
+                            <p id="infoHostname" class="text-sm font-medium text-gray-900">device.local</p>
+                        </div>
+                        <div>
+                            <h5 class="text-xs font-medium text-gray-500 mb-1">Vendor</h5>
+                            <p id="infoVendor" class="text-sm font-medium text-gray-900">Unknown</p>
+                        </div>
+                        <div>
+                            <h5 class="text-xs font-medium text-gray-500 mb-1">Status</h5>
+                            <p id="infoStatus" class="text-sm font-medium">
+                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                    Active
+                                </span>
+                            </p>
+                        </div>
+                        <div>
+                            <h5 class="text-xs font-medium text-gray-500 mb-1">Last Seen</h5>
+                            <p id="infoLastSeen" class="text-sm font-medium text-gray-900">Just now</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h5 class="text-xs font-medium text-gray-500 mb-1">Actions</h5>
+                        <div class="flex space-x-2">
+                            <button id="quickScanBtn" class="text-sm bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md">
+                                Quick Port Scan
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Ping Tab -->
+                <div id="pingTab" class="tab-content hidden">
+                    <div class="mb-4">
+                        <label for="pingCount" class="block text-sm font-medium text-gray-700 mb-1">Ping Count</label>
+                        <input type="number" id="pingCount" value="4" min="1" max="10" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="pingTimeout" class="block text-sm font-medium text-gray-700 mb-1">Timeout (seconds)</label>
+                        <input type="number" id="pingTimeout" value="1.0" min="0.1" max="5" step="0.1" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    
+                    <div id="pingResults" class="mb-4 hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Results</label>
+                        <div class="bg-gray-100 p-3 rounded-md max-h-40 overflow-y-auto">
+                            <pre id="pingResultsText" class="text-xs whitespace-pre-wrap"></pre>
+                        </div>
+                    </div>
+                    
+                    <button id="executePingBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+                        Ping Device
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Status Messages -->
+            <div id="deviceConfigStatus" class="mb-4 hidden">
+                <!-- Status messages will appear here -->
+            </div>
+        </div>
+        
+        <!-- Modal Footer -->
+        <div class="bg-gray-50 px-6 py-4 rounded-b-lg flex justify-end">
+            <button id="closeConfigBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-md">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Load devices on page load
+    loadDevices();
+    
+    // Set up network info and trigger auto-scan
+    setupNetworkInfo().then(() => {
+        startScan();
+    });
+    
+    // Refresh button
+    document.getElementById('refreshBtn').addEventListener('click', function() {
+        loadDevices();
+    });
+    
+    // Scan button
+    document.getElementById('scanBtn').addEventListener('click', function() {
+        startScan();
+    });
+    
+    // Start scan button
+    document.getElementById('startScanBtn').addEventListener('click', function() {
+        startScan();
+    });
+    
+    // Device search
+    document.getElementById('deviceSearch').addEventListener('input', function() {
+        filterDevices();
+    });
+    
+    // Status filter
+    document.getElementById('statusFilter').addEventListener('change', function() {
+        filterDevices();
+    });
+    
+    // Tab switching
+    document.querySelectorAll('.tab-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            // Remove active class from all tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('border-blue-500', 'text-blue-600');
+                btn.classList.add('border-transparent', 'text-gray-500');
+            });
+            
+            // Add active class to clicked tab button
+            this.classList.remove('border-transparent', 'text-gray-500');
+            this.classList.add('border-blue-500', 'text-blue-600');
+            
+            // Show corresponding tab content
+            const tabId = this.id.replace('Btn', '');
+            document.getElementById(tabId).classList.remove('hidden');
+            
+            // Hide any previous status messages
+            document.getElementById('deviceConfigStatus').classList.add('hidden');
+        });
+    });
+    
+    // Close device config modal
+    document.getElementById('closeDeviceConfigModal').addEventListener('click', function() {
+        document.getElementById('deviceConfigModal').classList.add('hidden');
+    });
+    
+    // Close config button
+    document.getElementById('closeConfigBtn').addEventListener('click', function() {
+        document.getElementById('deviceConfigModal').classList.add('hidden');
+    });
+    
+    // Execute ping button
+    document.getElementById('executePingBtn').addEventListener('click', function() {
+        pingDevice();
+    });
+    
+    // Quick port scan button
+    document.getElementById('quickScanBtn').addEventListener('click', function() {
+        // Switch to ping tab first
+        document.getElementById('pingTabBtn').click();
+        // Then execute port scan
+        scanPorts(document.getElementById('deviceConfigIP').textContent);
+    });
+    
+    // Set up auto-refresh for real-time updates
+    setInterval(function() {
+        loadDevices();
+    }, 30000); // Refresh every 30 seconds
+});
+
+async function setupNetworkInfo() {
+    try {
+        const response = await fetch('/api/network-info');
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        if (data.status === 'success' && data.network_range) {
+            document.getElementById('ipRange').value = data.network_range;
+        }
+    } catch (error) {
+        console.error('Error loading network info:', error);
+        document.getElementById('ipRange').value = '192.168.1.0/24'; // Fallback
+    }
+}
+
+function showAlert(message, type = 'error') {
+    const alertContainer = document.getElementById('alertContainer');
+    alertContainer.innerHTML = '';
+    alertContainer.classList.remove('hidden');
+    
+    const alertClass = type === 'error' ? 'bg-red-100 border-red-400 text-red-700' : 'bg-green-100 border-green-400 text-green-700';
+    
+    const alert = document.createElement('div');
+    alert.className = `${alertClass} px-4 py-3 rounded relative border`;
+    alert.role = 'alert';
+    alert.innerHTML = `
+        <span class="block sm:inline">${message}</span>
+        <button type="button" class="close-alert absolute top-0 right-0 px-4 py-3">
+            X
+        </button>
+    `;
+    
+    alertContainer.appendChild(alert);
+    
+    // Add event listener to close button
+    alert.querySelector('.close-alert').addEventListener('click', function() {
+        alertContainer.classList.add('hidden');
+    });
+    
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+        alertContainer.classList.add('hidden');
+    }, 5000);
+}
+
+function showConfigStatus(message, type = 'error') {
+    const statusElement = document.getElementById('deviceConfigStatus');
+    statusElement.innerHTML = '';
+    statusElement.classList.remove('hidden');
+    
+    const alertClass = type === 'error' ? 'bg-red-100 border-red-400 text-red-700' : 'bg-green-100 border-green-400 text-green-700';
+    
+    const alert = document.createElement('div');
+    alert.className = `${alertClass} px-4 py-3 rounded relative border`;
+    alert.innerHTML = `<span class="block sm:inline">${message}</span>`;
+    
+    statusElement.appendChild(alert);
+    
+    // Auto-hide after 5 seconds for success messages
+    if (type === 'success') {
+        setTimeout(() => {
+            statusElement.classList.add('hidden');
+        }, 5000);
+    }
+}
+
+function loadDevices() {
+    fetch('/api/devices')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'success' && data.data && data.data.devices && data.data.devices.length > 0) {
+                // Filter to only show active devices
+                const activeDevices = data.data.devices.filter(device => device.status === 'Active');
+                displayDevices(activeDevices);
+                
+                // Update the device count in the header
+                const deviceCountElem = document.querySelector('h1.text-3xl');
+                if (deviceCountElem) {
+                    deviceCountElem.textContent = `Devices (${activeDevices.length} active)`;
+                }
+            } else if (data.status === 'no_data') {
+                document.getElementById('noDevicesRow').style.display = '';
+            } else {
+                throw new Error('Invalid response format');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading devices:', error);
+            document.getElementById('noDevicesRow').style.display = '';
+            document.getElementById('noDevicesRow').innerHTML = '<td colspan="6" class="px-6 py-4 text-center text-gray-500">Error loading devices. Please try again.</td>';
+            showAlert('Error loading devices: ' + error.message);
+        });
+}
+
+function displayDevices(devices) {
+    const tableBody = document.getElementById('deviceTableBody');
+    
+    // Clear table
+    tableBody.innerHTML = '';
+    
+    if (devices.length === 0) {
+        const row = document.createElement('tr');
+        row.id = 'noDevicesRow';
+        row.innerHTML = '<td colspan="6" class="px-6 py-4 text-center text-gray-500">No devices found. Run a scan to discover devices.</td>';
+        tableBody.appendChild(row);
+        return;
+    }
+    
+    // Add devices to table
+    devices.forEach(device => {
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-gray-50';
+        row.dataset.ip = device.ip;
+        row.dataset.mac = device.mac || '';
+        row.dataset.hostname = device.hostname || '';
+        row.dataset.vendor = device.vendor || '';
+        row.dataset.status = device.status || 'Unknown';
+        row.dataset.lastSeen = device.last_seen || '';
+        
+        const statusClass = device.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800';
+        
+        row.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${device.ip}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${device.mac || '-'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${device.hostname || '-'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${device.vendor || '-'}</td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
+                    ${device.status || 'Unknown'}
+                </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <button class="config-device-btn bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md" data-ip="${device.ip}">
+                    Configure
+                </button>
+            </td>
+        `;
+        
+        tableBody.appendChild(row);
+    });
+    
+    // Add event listeners to config buttons
+    document.querySelectorAll('.config-device-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const ip = this.dataset.ip;
+            const row = this.closest('tr');
+            showDeviceConfigModal(ip, row.dataset);
+        });
+    });
+    
+    // Apply any active filters
+    filterDevices();
+}
+
+function filterDevices() {
+    const searchTerm = document.getElementById('deviceSearch').value.toLowerCase();
+    const statusFilter = document.getElementById('statusFilter').value;
+    
+    const rows = document.querySelectorAll('#deviceTableBody tr:not(#noDevicesRow)');
+    let visibleCount = 0;
+    
+    rows.forEach(row => {
+        const ip = row.dataset.ip.toLowerCase();
+        const mac = row.dataset.mac.toLowerCase();
+        const hostname = row.dataset.hostname.toLowerCase();
+        const vendor = row.dataset.vendor.toLowerCase();
+        const status = row.dataset.status;
+        
+        const matchesSearch = ip.includes(searchTerm) || 
+                             mac.includes(searchTerm) || 
+                             hostname.includes(searchTerm) || 
+                             vendor.includes(searchTerm);
+        
+        const matchesStatus = statusFilter === 'all' || status === statusFilter;
+        
+        if (matchesSearch && matchesStatus) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    
+    // Show no results message if no devices match filters
+    const noDevicesRow = document.getElementById('noDevicesRow');
+    if (noDevicesRow) {
+        if (visibleCount === 0 && rows.length > 0) {
+            noDevicesRow.style.display = '';
+            noDevicesRow.innerHTML = '<td colspan="6" class="px-6 py-4 text-center text-gray-500">No devices match the current filters.</td>';
+        } else {
+            noDevicesRow.style.display = 'none';
+        }
+    }
+}
+
+function startScan() {
+    const ipRange = document.getElementById('ipRange').value;
+    const timeout = document.getElementById('scanTimeout').value;
+    const maxThreads = document.getElementById('maxThreads').value;
+    
+    if (!ipRange) {
+        showAlert('Please enter an IP range');
+        return;
+    }
+    
+    // Show progress bar
+    const progressContainer = document.getElementById('scanProgressContainer');
+    const progressBar = document.getElementById('scanProgressBar');
+    const progressText = document.getElementById('scanProgressText');
+    const scanCurrentIP = document.getElementById('scanCurrentIP');
+    const scanStats = document.getElementById('scanStats');
+    
+    progressContainer.classList.remove('hidden');
+    progressBar.style.width = '0%';
+    progressText.textContent = '0%';
+    scanCurrentIP.textContent = 'Starting scan...';
+    scanStats.textContent = '0 active devices found';
+    
+    // Disable scan buttons
+    const scanButton = document.getElementById('scanBtn');
+    const startScanButton = document.getElementById('startScanBtn');
+    scanButton.disabled = true;
+    startScanButton.disabled = true;
+    scanButton.classList.add('opacity-50');
+    startScanButton.classList.add('opacity-50');
+    
+    // Start scan
+    fetch('/api/scan', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            ip_range: ipRange,
+            timeout: parseFloat(timeout),
+            max_threads: parseInt(maxThreads)
+        }),
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.status === 'started') {
+            // Poll for scan status
+            pollScanStatus(progressBar, progressText, scanCurrentIP, scanStats, scanButton, startScanButton);
+        } else {
+            showAlert('Failed to start scan: ' + (data.message || 'Unknown error'));
+            resetScanUI(progressContainer, scanButton, startScanButton);
+        }
+    })
+    .catch(error => {
+        console.error('Error starting scan:', error);
+        showAlert('Failed to start scan: ' + error.message);
+        resetScanUI(progressContainer, scanButton, startScanButton);
+    });
+}
+
+function pollScanStatus(progressBar, progressText, scanCurrentIP, scanStats, scanButton, startScanButton) {
+    const progressContainer = document.getElementById('scanProgressContainer');
+    let retryCount = 0;
+    const maxRetries = 5;
+    let pollInterval = 1000; // Start with 1s polling
+    
+    const checkStatus = () => {
+        fetch('/api/scan/status')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === 'in_progress') {
+                    // Update progress
+                    const progress = data.progress || 0;
+                    progressBar.style.width = `${progress}%`;
+                    progressText.textContent = `${progress}%`;
+                    
+                    if (data.current_ip) {
+                        scanCurrentIP.textContent = `Current IP: ${data.current_ip}`;
+                    }
+                    
+                    if (data.results) {
+                        // Count only active devices
+                        const activeCount = data.results.filter(device => device.status === 'Active').length;
+                        scanStats.textContent = `${activeCount} active devices found`;
+                    }
+                    
+                    // Continue polling
+                    setTimeout(checkStatus, pollInterval);
+                } else if (data.status === 'idle') {
+                    // Scan completed
+                    progressBar.style.width = '100%';
+                    progressText.textContent = '100%';
+                    
+                    // Update results - filter for active devices only
+                    if (data.results) {
+                        const activeDevices = data.results.filter(device => device.status === 'Active');
+                        scanStats.textContent = `${activeDevices.length} active devices found`;
+                        displayDevices(activeDevices);
+                    }
+                    
+                    // Reset UI after a short delay
+                    setTimeout(() => {
+                        resetScanUI(progressContainer, scanButton, startScanButton);
+                    }, 1000);
+                } else {
+                    // Error or unknown status
+                    showAlert('Scan failed or was interrupted');
+                    resetScanUI(progressContainer, scanButton, startScanButton);
+                }
+            })
+            .catch(error => {
+                console.error('Error checking scan status:', error);
+                retryCount++;
+                
+                if (retryCount <= maxRetries) {
+                    // Retry after a delay
+                    setTimeout(checkStatus, pollInterval * 2);
+                } else {
+                    showAlert('Error checking scan status: Connection failed');
+                    resetScanUI(progressContainer, scanButton, startScanButton);
+                }
+            });
+    };
+    
+    // Start polling
+    setTimeout(checkStatus, 1000);
+}
+
+function resetScanUI(progressContainer, scanButton, startScanButton) {
+    progressContainer.classList.add('hidden');
+    scanButton.disabled = false;
+    startScanButton.disabled = false;
+    scanButton.classList.remove('opacity-50');
+    startScanButton.classList.remove('opacity-50');
+}
+
+function showDeviceConfigModal(ip, deviceData) {
+    // Set device info
+    document.getElementById('deviceConfigIP').textContent = ip;
+    document.getElementById('infoIP').textContent = ip;
+    document.getElementById('infoMAC').textContent = deviceData.mac || '-';
+    document.getElementById('infoHostname').textContent = deviceData.hostname || '-';
+    document.getElementById('infoVendor').textContent = deviceData.vendor || 'Unknown';
+    
+    const statusClass = deviceData.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800';
+    document.getElementById('infoStatus').innerHTML = `
+        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
+            ${deviceData.status || 'Unknown'}
+        </span>
+    `;
+    
+    document.getElementById('infoLastSeen').textContent = deviceData.lastSeen || '-';
+    
+    // Reset tabs - only show info and ping tabs
+    document.getElementById('infoTabBtn').click();
+    
+    // Show modal
+    document.getElementById('deviceConfigModal').classList.remove('hidden');
+}
+
+function pingDevice() {
+    const ip = document.getElementById('deviceConfigIP').textContent;
+    const count = document.getElementById('pingCount').value;
+    const timeout = document.getElementById('pingTimeout').value;
+    
+    // Show loading state
+    const executeBtn = document.getElementById('executePingBtn');
+    const originalText = executeBtn.textContent;
+    executeBtn.disabled = true;
+    executeBtn.textContent = 'Pinging...';
+    
+    // Hide previous results
+    document.getElementById('pingResults').classList.add('hidden');
+    document.getElementById('deviceConfigStatus').classList.add('hidden');
+    
+    // Send ping request
+    fetch(`/api/ping?ip=${encodeURIComponent(ip)}&count=${count}&timeout=${timeout}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Show results
+            const resultsElement = document.getElementById('pingResults');
+            const resultsText = document.getElementById('pingResultsText');
+            
+            resultsElement.classList.remove('hidden');
+            
+            if (data.success) {
+                resultsText.textContent = data.output || 'Ping successful';
+                showConfigStatus('Ping completed successfully', 'success');
+            } else {
+                resultsText.textContent = data.output || 'Ping failed';
+                showConfigStatus(`Ping failed: ${data.message}`, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error pinging device:', error);
+            showConfigStatus(`Error: ${error.message}`, 'error');
+        })
+        .finally(() => {
+            // Reset button
+            executeBtn.disabled = false;
+            executeBtn.textContent = originalText;
+        });
+}
+
+function scanPorts(ip) {
+    // Show loading state
+    const quickScanBtn = document.getElementById('quickScanBtn');
+    const originalText = quickScanBtn.textContent;
+    quickScanBtn.disabled = true;
+    quickScanBtn.textContent = 'Scanning...';
+    
+    // Hide previous status
+    document.getElementById('deviceConfigStatus').classList.add('hidden');
+    
+    // Send port scan request
+    fetch('/api/ports/scan', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            ip: ip,
+            timeout: 1.0
+        }),
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.status === 'success') {
+            const openPorts = data.open_ports || [];
+            showConfigStatus(`Port scan completed. Found ${openPorts.length} open ports.`, 'success');
+            
+            // Create a formatted result for the ping results area
+            let resultText = `Port Scan Results for ${ip}:\n\n`;
+            
+            if (openPorts.length === 0) {
+                resultText += 'No open ports found.';
+            } else {
+                resultText += 'Open Ports:\n';
+                openPorts.forEach(port => {
+                    resultText += `- Port ${port.port}: ${port.service || 'unknown'}\n`;
+                });
+            }
+            
+            // Display in ping results area
+            const resultsElement = document.getElementById('pingResults');
+            const resultsText = document.getElementById('pingResultsText');
+            
+            resultsElement.classList.remove('hidden');
+            resultsText.textContent = resultText;
+        } else {
+            throw new Error(data.message || 'Failed to scan ports');
+        }
+    })
+    .catch(error => {
+        console.error('Error scanning ports:', error);
+        showConfigStatus(`Error: ${error.message}`, 'error');
+    })
+    .finally(() => {
+        // Reset button
+        quickScanBtn.disabled = false;
+        quickScanBtn.textContent = originalText;
+    });
+}
+</script>
+{% endblock %}

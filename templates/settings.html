@@ -1,0 +1,222 @@
+{% extends 'layout.html' %}
+
+
+
+{% block content %}
+<header class="mb-8">
+    <div class="flex justify-between items-center">
+        <h1 class="text-3xl font-bold text-gray-800">Settings</h1>
+        <div class="flex space-x-2">
+            <button id="saveSettingsBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                Save Settings
+            </button>
+        </div>
+    </div>
+</header>
+
+<!-- Settings Form -->
+<div class="bg-white p-6 rounded-lg shadow">
+    <form id="settingsForm">
+        <div class="space-y-6">
+            <!-- General Settings -->
+            <div>
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">General Settings</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="portInput" class="block text-sm font-medium text-gray-700 mb-1">Web Server Port</label>
+                        <input type="number" id="portInput" name="port" value="5000" min="1024" max="65535" class="w-full p-2 border border-gray-300 rounded-md">
+                        <p class="text-xs text-gray-500 mt-1">Requires restart to take effect</p>
+                    </div>
+                    
+                    <div>
+                        <label for="debugModeToggle" class="block text-sm font-medium text-gray-700 mb-1">Debug Mode</label>
+                        <div class="flex items-center">
+                            <label class="inline-flex relative items-center cursor-pointer">
+                                <input type="checkbox" id="debugModeToggle" name="debug_mode" value="true" class="sr-only peer" checked>
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                <span class="ml-3 text-sm font-medium text-gray-700">Enabled</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Scan Settings -->
+            <div>
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Scan Settings</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="defaultIpRangeInput" class="block text-sm font-medium text-gray-700 mb-1">Default IP Range</label>
+                        <input type="text" id="defaultIpRangeInput" name="default_ip_range" value="192.168.1.1/24" class="w-full p-2 border border-gray-300 rounded-md">
+                    </div>
+                    
+                    <div>
+                        <label for="defaultTimeoutInput" class="block text-sm font-medium text-gray-700 mb-1">Default Timeout (seconds)</label>
+                        <input type="number" id="defaultTimeoutInput" name="default_timeout" value="3" min="1" max="10" class="w-full p-2 border border-gray-300 rounded-md">
+                    </div>
+                    
+                    <div>
+                        <label for="maxDetailedScansInput" class="block text-sm font-medium text-gray-700 mb-1">Max Detailed Scans</label>
+                        <input type="number" id="maxDetailedScansInput" name="max_detailed_scans" value="50" min="10" max="500" class="w-full p-2 border border-gray-300 rounded-md">
+                        <p class="text-xs text-gray-500 mt-1">Maximum number of devices to scan in detail</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Port Scan Settings -->
+            <div>
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Port Scan Settings</h2>
+                
+                <div>
+                    <label for="commonPortsInput" class="block text-sm font-medium text-gray-700 mb-1">Common Ports to Scan</label>
+                    <input type="text" id="commonPortsInput" name="common_ports" value="21, 22, 23, 25, 53, 80, 110, 139, 443, 445, 3306, 3389, 5900, 8080, 8443" class="w-full p-2 border border-gray-300 rounded-md">
+                    <p class="text-xs text-gray-500 mt-1">Comma-separated list of ports</p>
+                </div>
+            </div>
+            
+            <!-- Advanced Settings -->
+            <div>
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Advanced Settings</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="maxHistoryEntriesInput" class="block text-sm font-medium text-gray-700 mb-1">Max History Entries</label>
+                        <input type="number" id="maxHistoryEntriesInput" name="max_history_entries" value="20" min="5" max="100" class="w-full p-2 border border-gray-300 rounded-md">
+                    </div>
+                    
+                    <div>
+                        <label for="logLevelSelect" class="block text-sm font-medium text-gray-700 mb-1">Log Level</label>
+                        <select id="logLevelSelect" name="log_level" class="w-full p-2 border border-gray-300 rounded-md">
+                            <option value="DEBUG">Debug</option>
+                            <option value="INFO" selected>Info</option>
+                            <option value="WARNING">Warning</option>
+                            <option value="ERROR">Error</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <label for="customCommandsInput" class="block text-sm font-medium text-gray-700 mb-1">Custom Commands</label>
+                    <textarea id="customCommandsInput" name="custom_commands" rows="3" class="w-full p-2 border border-gray-300 rounded-md" placeholder="Enter custom commands, one per line"></textarea>
+                    <p class="text-xs text-gray-500 mt-1">Advanced: Custom commands to run during scans</p>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Status Message -->
+<div id="statusMessage" class="mt-4 p-4 rounded hidden"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Elements
+        const settingsForm = document.getElementById('settingsForm');
+        const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+        const statusMessage = document.getElementById('statusMessage');
+        
+        // Load current settings
+        loadSettings();
+        
+        // Event Listeners
+        saveSettingsBtn.addEventListener('click', saveSettings);
+        
+        function loadSettings() {
+            // In a real application, this would fetch settings from the server
+            // For this demo, we'll use default values already in the form
+            
+            // Example of how to load settings from server:
+            /*
+            fetch('/settings')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('portInput').value = data.port;
+                    document.getElementById('debugModeToggle').checked = data.debug_mode;
+                    document.getElementById('defaultIpRangeInput').value = data.default_ip_range;
+                    document.getElementById('defaultTimeoutInput').value = data.default_timeout;
+                    document.getElementById('maxDetailedScansInput').value = data.max_detailed_scans;
+                    document.getElementById('commonPortsInput').value = data.common_ports.join(', ');
+                    document.getElementById('maxHistoryEntriesInput').value = data.max_history_entries;
+                    document.getElementById('logLevelSelect').value = data.log_level;
+                    document.getElementById('customCommandsInput').value = data.custom_commands.join('\n');
+                })
+                .catch(error => {
+                    showStatus('Error loading settings: ' + error.message, 'error');
+                });
+            */
+        }
+        
+        function saveSettings() {
+            // Get form data
+            const formData = new FormData(settingsForm);
+            const settings = {};
+            
+            for (const [key, value] of formData.entries()) {
+                settings[key] = value;
+            }
+            
+            // Special handling for checkbox
+            settings.debug_mode = document.getElementById('debugModeToggle').checked;
+            
+            // Parse common ports
+            settings.common_ports = settings.common_ports.split(',').map(port => parseInt(port.trim())).filter(port => !isNaN(port));
+            
+            // Parse custom commands
+            settings.custom_commands = settings.custom_commands.split('\n').filter(cmd => cmd.trim() !== '');
+            
+            // In a real application, this would send settings to the server
+            console.log('Settings to save:', settings);
+            
+            // Example of how to save settings to server:
+            /*
+            fetch('/settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(settings)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showStatus('Settings saved successfully!', 'success');
+                    } else {
+                        showStatus('Error saving settings: ' + data.error, 'error');
+                    }
+                })
+                .catch(error => {
+                    showStatus('Error saving settings: ' + error.message, 'error');
+                });
+            */
+            
+            // For demo, just show success message
+            showStatus('Settings saved successfully!', 'success');
+        }
+        
+        function showStatus(message, type) {
+            statusMessage.textContent = message;
+            statusMessage.classList.remove('hidden', 'bg-green-100', 'text-green-700', 'bg-red-100', 'text-red-700');
+            
+            if (type === 'success') {
+                statusMessage.classList.add('bg-green-100', 'text-green-700');
+            } else {
+                statusMessage.classList.add('bg-red-100', 'text-red-700');
+            }
+            
+            statusMessage.classList.remove('hidden');
+            
+            // Hide message after 5 seconds
+            setTimeout(() => {
+                statusMessage.classList.add('hidden');
+            }, 5000);
+        }
+    });
+</script>
+{% endblock %}

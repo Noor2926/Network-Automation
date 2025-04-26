@@ -1,0 +1,657 @@
+{% extends 'layout.html' %}
+
+{% block title %}Traffic Monitor{% endblock %}
+
+{% block content %}
+<header class="mb-8">
+    <div class="flex justify-between items-center">
+        <h1 class="text-3xl font-bold text-gray-800">Traffic Monitor</h1>
+        <div class="flex space-x-2">
+            <button id="helpBtn" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Help
+            </button>
+        </div>
+    </div>
+</header>
+
+<!-- Capture Controls -->
+<div class="bg-white p-4 rounded-lg shadow mb-6">
+    <h2 class="text-lg font-semibold mb-4">Capture Configuration</h2>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+            <label for="interfaceSelect" class="block text-sm font-medium text-gray-700 mb-1">Network Interface</label>
+            <select id="interfaceSelect" class="w-full p-2 border border-gray-300 rounded-md">
+                <option value="">Loading interfaces...</option>
+            </select>
+        </div>
+        
+        <div>
+            <label for="filterInput" class="block text-sm font-medium text-gray-700 mb-1">Capture Filter (BPF Syntax)</label>
+            <input type="text" id="filterInput" placeholder="e.g., tcp port 80" class="w-full p-2 border border-gray-300 rounded-md">
+            <p class="text-xs text-gray-500 mt-1">Leave empty to capture all traffic</p>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+            <label for="maxPacketsInput" class="block text-sm font-medium text-gray-700 mb-1">Max Packets to Store</label>
+            <input type="number" id="maxPacketsInput" value="1000" min="100" max="10000" class="w-full p-2 border border-gray-300 rounded-md">
+        </div>
+    </div>
+    
+    <div class="flex justify-end space-x-2">
+        <button id="startCaptureBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md">
+            Start Capture
+        </button>
+        <button id="stopCaptureBtn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md opacity-50" disabled>
+            Stop Capture
+        </button>
+    </div>
+</div>
+
+<!-- Status Bar -->
+<div id="captureStatus" class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded hidden">
+    <div class="flex items-center">
+        <div class="animate-spin rounded-full h-6 w-6 border-4 border-green-500 border-t-transparent mr-3"></div>
+        <div>
+            <p class="font-medium">Capturing network traffic</p>
+            <p id="captureStats" class="text-sm">Packets: 0 | Duration: 0s | Rate: 0 B/s</p>
+        </div>
+    </div>
+</div>
+
+<!-- Traffic Statistics -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <!-- Traffic Overview -->
+    <div class="bg-white p-4 rounded-lg shadow">
+        <h2 class="text-lg font-semibold mb-4">Traffic Overview</h2>
+        
+        <div class="grid grid-cols-2 gap-4">
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <div class="text-sm text-gray-500">Packets Captured</div>
+                <div id="packetCount" class="text-2xl font-bold">0</div>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <div class="text-sm text-gray-500">Data Transferred</div>
+                <div id="dataTransferred" class="text-2xl font-bold">0 B</div>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <div class="text-sm text-gray-500">Transfer Rate</div>
+                <div id="transferRate" class="text-2xl font-bold">0 B/s</div>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <div class="text-sm text-gray-500">Active Connections</div>
+                <div id="activeConnections" class="text-2xl font-bold">0</div>
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <h3 class="text-md font-medium mb-2">Protocol Distribution</h3>
+            <div id="protocolDistribution" class="space-y-2">
+                <div class="flex items-center">
+                    <div class="w-24 text-sm">No data</div>
+                    <div class="flex-1 bg-gray-200 rounded-full h-2"></div>
+                    <div class="w-12 text-right text-sm">0%</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Top Talkers -->
+    <div class="bg-white p-4 rounded-lg shadow">
+        <h2 class="text-lg font-semibold mb-4">Top Talkers</h2>
+        
+        <div class="mb-4">
+            <h3 class="text-md font-medium mb-2">Top Source IPs</h3>
+            <div id="topSources" class="space-y-2">
+                <div class="text-sm text-gray-500 text-center py-2">No data available</div>
+            </div>
+        </div>
+        
+        <div>
+            <h3 class="text-md font-medium mb-2">Top Destination IPs</h3>
+            <div id="topDestinations" class="space-y-2">
+                <div class="text-sm text-gray-500 text-center py-2">No data available</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Packet List -->
+<div class="bg-white p-4 rounded-lg shadow mb-6">
+    <div class="flex justify-between items-center mb-4">
+        <h2 class="text-lg font-semibold">Packet Capture</h2>
+        <button id="clearCaptureBtn" class="text-sm text-blue-600 hover:text-blue-800">Clear</button>
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead>
+                <tr>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Destination</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Protocol</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Length</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Info</th>
+                </tr>
+            </thead>
+            <tbody id="packetList" class="divide-y divide-gray-200">
+                <tr>
+                    <td colspan="7" class="px-4 py-4 text-sm text-center text-gray-500">
+                        No packets captured. Start a capture to see packets.
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Connections -->
+<div class="bg-white p-4 rounded-lg shadow">
+    <h2 class="text-lg font-semibold mb-4">Active Connections</h2>
+    
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead>
+                <tr>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Destination</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Protocol</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Packets</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bytes</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
+                </tr>
+            </thead>
+            <tbody id="connectionsList" class="divide-y divide-gray-200">
+                <tr>
+                    <td colspan="6" class="px-4 py-4 text-sm text-center text-gray-500">
+                        No active connections. Start a capture to see connections.
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Help Modal -->
+<div id="helpModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+        <div class="p-4 border-b border-gray-200 flex justify-between items-center">
+            <h3 class="text-lg font-semibold">Traffic Monitor Help</h3>
+            <button id="closeHelpModal" class="text-gray-500 hover:text-gray-700">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <div class="p-4">
+            <div class="space-y-4">
+                <div>
+                    <h4 class="font-medium text-lg">Getting Started</h4>
+                    <p class="text-gray-600">The Traffic Monitor allows you to capture and analyze network traffic on your selected interface. Follow these steps to begin:</p>
+                    <ol class="list-decimal list-inside mt-2 space-y-1 text-gray-600">
+                        <li>Select a network interface from the dropdown menu</li>
+                        <li>Optionally, enter a capture filter using BPF syntax</li>
+                        <li>Click "Start Capture" to begin monitoring traffic</li>
+                        <li>View real-time statistics and packet information</li>
+                        <li>Click "Stop Capture" when finished</li>
+                    </ol>
+                </div>
+                
+                <div>
+                    <h4 class="font-medium text-lg">Capture Filters</h4>
+                    <p class="text-gray-600">You can use Berkeley Packet Filter (BPF) syntax to filter the captured packets. Here are some examples:</p>
+                    <ul class="list-disc list-inside mt-2 space-y-1 text-gray-600">
+                        <li><code class="bg-gray-100 px-1 rounded">tcp port 80</code> - Capture only HTTP traffic</li>
+                        <li><code class="bg-gray-100 px-1 rounded">host 192.168.1.1</code> - Capture traffic to/from a specific IP</li>
+                        <li><code class="bg-gray-100 px-1 rounded">udp</code> - Capture only UDP traffic</li>
+                        <li><code class="bg-gray-100 px-1 rounded">port 53</code> - Capture DNS traffic</li>
+                        <li><code class="bg-gray-100 px-1 rounded">icmp</code> - Capture only ICMP (ping) traffic</li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="font-medium text-lg">Understanding the Interface</h4>
+                    <p class="text-gray-600">The Traffic Monitor interface is divided into several sections:</p>
+                    <ul class="list-disc list-inside mt-2 space-y-1 text-gray-600">
+                        <li><strong>Traffic Overview</strong> - Shows summary statistics of captured traffic</li>
+                        <li><strong>Top Talkers</strong> - Displays the most active source and destination IP addresses</li>
+                        <li><strong>Packet Capture</strong> - Lists all captured packets with details</li>
+                        <li><strong>Active Connections</strong> - Shows current network connections</li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="font-medium text-lg">Troubleshooting</h4>
+                    <p class="text-gray-600">If you encounter issues with the Traffic Monitor:</p>
+                    <ul class="list-disc list-inside mt-2 space-y-1 text-gray-600">
+                        <li>Ensure you have administrator/root privileges to capture packets</li>
+                        <li>Verify that Npcap or libpcap is properly installed on your system</li>
+                        <li>Try selecting a different network interface</li>
+                        <li>Disable any security software that might block packet capture</li>
+                        <li>Check the application logs for detailed error messages</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="p-4 border-t border-gray-200 flex justify-end">
+            <button id="closeHelpBtn" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // DOM Elements
+    const interfaceSelect = document.getElementById('interfaceSelect');
+    const filterInput = document.getElementById('filterInput');
+    const maxPacketsInput = document.getElementById('maxPacketsInput');
+    const startCaptureBtn = document.getElementById('startCaptureBtn');
+    const stopCaptureBtn = document.getElementById('stopCaptureBtn');
+    const clearCaptureBtn = document.getElementById('clearCaptureBtn');
+    const captureStatus = document.getElementById('captureStatus');
+    const captureStats = document.getElementById('captureStats');
+    const packetCount = document.getElementById('packetCount');
+    const dataTransferred = document.getElementById('dataTransferred');
+    const transferRate = document.getElementById('transferRate');
+    const activeConnections = document.getElementById('activeConnections');
+    const protocolDistribution = document.getElementById('protocolDistribution');
+    const topSources = document.getElementById('topSources');
+    const topDestinations = document.getElementById('topDestinations');
+    const packetList = document.getElementById('packetList');
+    const connectionsList = document.getElementById('connectionsList');
+    const helpBtn = document.getElementById('helpBtn');
+    const helpModal = document.getElementById('helpModal');
+    const closeHelpModal = document.getElementById('closeHelpModal');
+    const closeHelpBtn = document.getElementById('closeHelpBtn');
+    
+    // Variables
+    let isCapturing = false;
+    let updateInterval = null;
+    let lastPacketCount = 0;
+    
+    // Colors for protocol distribution
+    const protocolColors = {
+        'HTTP': 'bg-blue-500',
+        'HTTPS': 'bg-green-500',
+        'DNS': 'bg-yellow-500',
+        'ICMP': 'bg-red-500',
+        'TCP': 'bg-purple-500',
+        'UDP': 'bg-indigo-500',
+        'ARP': 'bg-pink-500',
+        'DHCP': 'bg-orange-500',
+        'SSH': 'bg-teal-500',
+        'FTP': 'bg-cyan-500',
+        'SMTP': 'bg-lime-500',
+        'Ethernet': 'bg-gray-500',
+        'IP': 'bg-gray-700',
+        'Unknown': 'bg-gray-400'
+    };
+    
+    // Load available interfaces
+    function loadInterfaces() {
+        fetch('/api/traffic/interfaces')
+            .then(response => response.json())
+            .then(data => {
+                interfaceSelect.innerHTML = '';
+                
+                if (data.length === 0) {
+                    const option = document.createElement('option');
+                    option.value = '';
+                    option.textContent = 'No interfaces available';
+                    interfaceSelect.appendChild(option);
+                    startCaptureBtn.disabled = true;
+                    startCaptureBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                } else {
+                    data.forEach(iface => {
+                        const option = document.createElement('option');
+                        option.value = iface.name;
+                        option.textContent = `${iface.name} (${iface.ip})`;
+                        interfaceSelect.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error loading interfaces:', error);
+                interfaceSelect.innerHTML = '<option value="">Error loading interfaces</option>';
+            });
+    }
+    
+    // Start capture
+    function startCapture() {
+        const interface = interfaceSelect.value;
+        const filter = filterInput.value;
+        const maxPackets = parseInt(maxPacketsInput.value);
+        
+        if (!interface) {
+            alert('Please select a network interface');
+            return;
+        }
+        
+        // Disable start button and enable stop button
+        startCaptureBtn.disabled = true;
+        startCaptureBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        stopCaptureBtn.disabled = false;
+        stopCaptureBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        
+        // Show capture status
+        captureStatus.classList.remove('hidden');
+        
+        // Start capture
+        fetch('/api/traffic/start', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                interface: interface,
+                filter: filter,
+                max_packets: maxPackets
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'started') {
+                isCapturing = true;
+                
+                // Start updating stats
+                updateStats();
+                updateInterval = setInterval(updateStats, 1000);
+            } else {
+                alert('Failed to start capture: ' + data.message);
+                stopCapture();
+            }
+        })
+        .catch(error => {
+            console.error('Error starting capture:', error);
+            alert('Error starting capture. See console for details.');
+            stopCapture();
+        });
+    }
+    
+    // Stop capture
+    function stopCapture() {
+        // Disable stop button and enable start button
+        stopCaptureBtn.disabled = true;
+        stopCaptureBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        startCaptureBtn.disabled = false;
+        startCaptureBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        
+        // Hide capture status
+        captureStatus.classList.add('hidden');
+        
+        // Stop updating stats
+        clearInterval(updateInterval);
+        
+        if (isCapturing) {
+            // Stop capture
+            fetch('/api/traffic/stop', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                isCapturing = false;
+            })
+            .catch(error => {
+                console.error('Error stopping capture:', error);
+            });
+        }
+    }
+    
+    // Clear capture data
+    function clearCapture() {
+        // Reset UI
+        packetCount.textContent = '0';
+        dataTransferred.textContent = '0 B';
+        transferRate.textContent = '0 B/s';
+        activeConnections.textContent = '0';
+        
+        protocolDistribution.innerHTML = `
+            <div class="flex items-center">
+                <div class="w-24 text-sm">No data</div>
+                <div class="flex-1 bg-gray-200 rounded-full h-2"></div>
+                <div class="w-12 text-right text-sm">0%</div>
+            </div>
+        `;
+        
+        topSources.innerHTML = '<div class="text-sm text-gray-500 text-center py-2">No data available</div>';
+        topDestinations.innerHTML = '<div class="text-sm text-gray-500 text-center py-2">No data available</div>';
+        
+        packetList.innerHTML = `
+            <tr>
+                <td colspan="7" class="px-4 py-4 text-sm text-center text-gray-500">
+                    No packets captured. Start a capture to see packets.
+                </td>
+            </tr>
+        `;
+        
+        connectionsList.innerHTML = `
+            <tr>
+                <td colspan="6" class="px-4 py-4 text-sm text-center text-gray-500">
+                    No active connections. Start a capture to see connections.
+                </td>
+            </tr>
+        `;
+        
+        // Reset backend data
+        fetch('/api/traffic/clear', {
+            method: 'POST'
+        })
+        .catch(error => {
+            console.error('Error clearing capture data:', error);
+        });
+    }
+    
+    // Update statistics
+    function updateStats() {
+        fetch('/api/traffic/stats')
+            .then(response => response.json())
+            .then(data => {
+                // Update capture stats
+                const elapsedTime = Math.floor(data.elapsed_time);
+                const hours = Math.floor(elapsedTime / 3600);
+                const minutes = Math.floor((elapsedTime % 3600) / 60);
+                const seconds = elapsedTime % 60;
+                const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                captureStats.textContent = `Packets: ${data.packets_captured} | Duration: ${timeString} | Rate: ${data.bytes_per_second_formatted}`;
+                
+                // Update overview stats
+                packetCount.textContent = data.packets_captured;
+                dataTransferred.textContent = data.total_bytes_formatted;
+                transferRate.textContent = data.bytes_per_second_formatted;
+                activeConnections.textContent = data.active_connections ? data.active_connections.length : 0;
+                
+                // Update protocol distribution
+                if (data.top_protocols && data.top_protocols.length > 0) {
+                    protocolDistribution.innerHTML = '';
+                    
+                    data.top_protocols.forEach(protocol => {
+                        if (protocol.bytes > 0) {
+                            const colorClass = protocolColors[protocol.protocol] || 'bg-gray-400';
+                            
+                            const protocolDiv = document.createElement('div');
+                            protocolDiv.className = 'flex items-center';
+                            protocolDiv.innerHTML = `
+                                <div class="w-24 text-sm">${protocol.protocol}</div>
+                                <div class="flex-1 bg-gray-200 rounded-full h-2">
+                                    <div class="${colorClass} h-2 rounded-full" style="width: ${protocol.percentage.toFixed(1)}%"></div>
+                                </div>
+                                <div class="w-12 text-right text-sm">${protocol.percentage.toFixed(1)}%</div>
+                            `;
+                            
+                            protocolDistribution.appendChild(protocolDiv);
+                        }
+                    });
+                }
+                
+                // Update top sources
+                if (data.top_sources && data.top_sources.length > 0) {
+                    topSources.innerHTML = '';
+                    
+                    data.top_sources.forEach(source => {
+                        const sourceDiv = document.createElement('div');
+                        sourceDiv.className = 'flex items-center';
+                        sourceDiv.innerHTML = `
+                            <div class="w-1/3 text-sm">${source.ip}</div>
+                            <div class="flex-1 bg-gray-200 rounded-full h-2">
+                                <div class="bg-blue-500 h-2 rounded-full" style="width: ${source.percentage.toFixed(1)}%"></div>
+                            </div>
+                            <div class="w-24 text-right text-sm">${source.bytes_formatted}</div>
+                        `;
+                        
+                        topSources.appendChild(sourceDiv);
+                    });
+                }
+                
+                // Update top destinations
+                if (data.top_destinations && data.top_destinations.length > 0) {
+                    topDestinations.innerHTML = '';
+                    
+                    data.top_destinations.forEach(destination => {
+                        const destinationDiv = document.createElement('div');
+                        destinationDiv.className = 'flex items-center';
+                        destinationDiv.innerHTML = `
+                            <div class="w-1/3 text-sm">${destination.ip}</div>
+                            <div class="flex-1 bg-gray-200 rounded-full h-2">
+                                <div class="bg-green-500 h-2 rounded-full" style="width: ${destination.percentage.toFixed(1)}%"></div>
+                            </div>
+                            <div class="w-24 text-right text-sm">${destination.bytes_formatted}</div>
+                        `;
+                        
+                        topDestinations.appendChild(destinationDiv);
+                    });
+                }
+                
+                // Update packet list
+                if (data.recent_packets && data.recent_packets.length > 0) {
+                    // Only update if there are new packets
+                    if (data.packets_captured > lastPacketCount) {
+                        lastPacketCount = data.packets_captured;
+                        
+                        // Clear "no packets" message if it exists
+                        if (packetList.querySelector('td[colspan="7"]')) {
+                            packetList.innerHTML = '';
+                        }
+                        
+                        // Add new packets (in reverse order to show newest first)
+                        const newPackets = data.recent_packets.slice().reverse();
+                        
+                        // Limit to 100 rows to prevent performance issues
+                        while (packetList.children.length > 100) {
+                            packetList.removeChild(packetList.lastChild);
+                        }
+                        
+                        // Add new packets at the beginning
+                        newPackets.forEach(packet => {
+                            // Check if packet is already in the list
+                            if (!document.getElementById(`packet-${packet.id}`)) {
+                                const row = document.createElement('tr');
+                                row.id = `packet-${packet.id}`;
+                                row.innerHTML = `
+                                    <td class="px-4 py-2 text-sm">${packet.id}</td>
+                                    <td class="px-4 py-2 text-sm">${packet.timestamp}</td>
+                                    <td class="px-4 py-2 text-sm">${packet.src_ip}</td>
+                                    <td class="px-4 py-2 text-sm">${packet.dst_ip}</td>
+                                    <td class="px-4 py-2 text-sm">${packet.protocol}</td>
+                                    <td class="px-4 py-2 text-sm">${packet.length}</td>
+                                    <td class="px-4 py-2 text-sm">${packet.info || ''}</td>
+                                `;
+                                
+                                // Add at the beginning
+                                if (packetList.firstChild) {
+                                    packetList.insertBefore(row, packetList.firstChild);
+                                } else {
+                                    packetList.appendChild(row);
+                                }
+                            }
+                        });
+                    }
+                }
+                
+                // Update connections list
+                if (data.active_connections && data.active_connections.length > 0) {
+                    connectionsList.innerHTML = '';
+                    
+                    data.active_connections.forEach(conn => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td class="px-4 py-2 text-sm">${conn.src_ip}:${conn.src_port}</td>
+                            <td class="px-4 py-2 text-sm">${conn.dst_ip}:${conn.dst_port}</td>
+                            <td class="px-4 py-2 text-sm">${conn.protocol}</td>
+                            <td class="px-4 py-2 text-sm">${conn.packets}</td>
+                            <td class="px-4 py-2 text-sm">${conn.bytes_formatted}</td>
+                            <td class="px-4 py-2 text-sm">${formatDuration(conn.duration)}</td>
+                        `;
+                        
+                        connectionsList.appendChild(row);
+                    });
+                } else if (connectionsList.children.length === 0) {
+                    connectionsList.innerHTML = `
+                        <tr>
+                            <td colspan="6" class="px-4 py-2 text-sm text-center text-gray-500">
+                                No active connections. Start a capture to see connections.
+                            </td>
+                        </tr>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error updating stats:', error);
+            });
+    }
+    
+    // Format duration in seconds to HH:MM:SS
+    function formatDuration(seconds) {
+        seconds = Math.floor(seconds);
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+        
+        if (hours > 0) {
+            return `${hours}h ${minutes}m ${secs}s`;
+        } else if (minutes > 0) {
+            return `${minutes}m ${secs}s`;
+        } else {
+            return `${secs}s`;
+        }
+    }
+    
+    // Event Listeners
+    startCaptureBtn.addEventListener('click', startCapture);
+    stopCaptureBtn.addEventListener('click', stopCapture);
+    clearCaptureBtn.addEventListener('click', clearCapture);
+    
+    // Help modal
+    helpBtn.addEventListener('click', () => {
+        helpModal.classList.remove('hidden');
+    });
+    
+    closeHelpModal.addEventListener('click', () => {
+        helpModal.classList.add('hidden');
+    });
+    
+    closeHelpBtn.addEventListener('click', () => {
+        helpModal.classList.add('hidden');
+    });
+    
+    // Close modal when clicking outside
+    helpModal.addEventListener('click', (e) => {
+        if (e.target === helpModal) {
+            helpModal.classList.add('hidden');
+        }
+    });
+    
+    // Initialize
+    loadInterfaces();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,505 @@
+{% extends 'layout.html' %}
+
+{% block title %}Network Threats{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold text-gray-800 mb-6">Network Threat Detection</h1>
+    
+    <!-- Status Card -->
+    <div class="bg-white shadow rounded-lg overflow-hidden mb-8">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-800">Monitoring Status</h2>
+        </div>
+        <div class="px-6 py-4">
+            <div id="status-container" class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <div id="status-indicator" class="h-4 w-4 rounded-full bg-gray-400 mr-3"></div>
+                    <span id="status-text" class="text-gray-700">Checking status...</span>
+                </div>
+                <div class="flex space-x-3">
+                    <button id="start-monitoring" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md flex items-center">
+                        <svg class="h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                        </svg>
+                        Start Monitoring
+                    </button>
+                    <button id="stop-monitoring" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md flex items-center">
+                        <svg class="h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clip-rule="evenodd" />
+                        </svg>
+                        Stop Monitoring
+                    </button>
+                </div>
+            </div>
+            <div class="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <h3 class="text-sm font-medium text-blue-800 mb-1">Packets Processed</h3>
+                    <p id="packets-count" class="text-2xl font-bold text-blue-600">0</p>
+                </div>
+                <div class="bg-red-50 p-4 rounded-lg">
+                    <h3 class="text-sm font-medium text-red-800 mb-1">Suspicious IPs</h3>
+                    <p id="suspicious-ips-count" class="text-2xl font-bold text-red-600">0</p>
+                </div>
+                <div class="bg-yellow-50 p-4 rounded-lg">
+                    <h3 class="text-sm font-medium text-yellow-800 mb-1">Suspicious MACs</h3>
+                    <p id="suspicious-macs-count" class="text-2xl font-bold text-yellow-600">0</p>
+                </div>
+                <div class="bg-purple-50 p-4 rounded-lg">
+                    <h3 class="text-sm font-medium text-purple-800 mb-1">Total Alerts</h3>
+                    <p id="alerts-count" class="text-2xl font-bold text-purple-600">0</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Network Information -->
+    <div class="bg-white shadow rounded-lg overflow-hidden mb-8">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-800">Network Information</h2>
+        </div>
+        <div class="px-6 py-4">
+            <div id="network-info-loading" class="flex justify-center items-center py-4">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            </div>
+            <div id="network-info" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="p-4 border border-gray-200 rounded-lg">
+                    <h3 class="text-sm font-medium text-gray-500 mb-1">Local IP</h3>
+                    <p id="local-ip" class="text-lg font-semibold text-gray-800">-</p>
+                </div>
+                <div class="p-4 border border-gray-200 rounded-lg">
+                    <h3 class="text-sm font-medium text-gray-500 mb-1">Local MAC</h3>
+                    <p id="local-mac" class="text-lg font-semibold text-gray-800">-</p>
+                </div>
+                <div class="p-4 border border-gray-200 rounded-lg">
+                    <h3 class="text-sm font-medium text-gray-500 mb-1">Gateway IP</h3>
+                    <p id="gateway-ip" class="text-lg font-semibold text-gray-800">-</p>
+                </div>
+                <div class="p-4 border border-gray-200 rounded-lg">
+                    <h3 class="text-sm font-medium text-gray-500 mb-1">Interface</h3>
+                    <p id="interface-name" class="text-lg font-semibold text-gray-800">-</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Threat Alerts -->
+    <div class="bg-white shadow rounded-lg overflow-hidden mb-8">
+        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+            <h2 class="text-xl font-semibold text-gray-800">Recent Threat Alerts</h2>
+            <button id="clear-alerts" class="text-gray-500 hover:text-gray-700">
+                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+            </button>
+        </div>
+        <div class="px-6 py-4">
+            <div id="alerts-container" class="space-y-4 max-h-96 overflow-y-auto">
+                <div id="no-alerts" class="text-center py-8 text-gray-500">
+                    No threat alerts detected yet. Start monitoring to detect threats.
+                </div>
+                <!-- Alerts will be added here dynamically -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Suspicious IPs -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+        <div class="bg-white shadow rounded-lg overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-800">Suspicious IPs</h2>
+            </div>
+            <div class="px-6 py-4">
+                <div id="suspicious-ips-container" class="space-y-2 max-h-64 overflow-y-auto">
+                    <div id="no-suspicious-ips" class="text-center py-4 text-gray-500">
+                        No suspicious IPs detected yet.
+                    </div>
+                    <!-- Suspicious IPs will be added here dynamically -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Suspicious MACs -->
+        <div class="bg-white shadow rounded-lg overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-800">Suspicious MACs</h2>
+            </div>
+            <div class="px-6 py-4">
+                <div id="suspicious-macs-container" class="space-y-2 max-h-64 overflow-y-auto">
+                    <div id="no-suspicious-macs" class="text-center py-4 text-gray-500">
+                        No suspicious MACs detected yet.
+                    </div>
+                    <!-- Suspicious MACs will be added here dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Threat Types Distribution -->
+    <div class="bg-white shadow rounded-lg overflow-hidden mb-8">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-800">Threat Distribution</h2>
+        </div>
+        <div class="px-6 py-4">
+            <div class="h-64">
+                <canvas id="threat-chart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize chart
+    const ctx = document.getElementById('threat-chart').getContext('2d');
+    const threatChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['ARP Spoofing', 'Port Scanning', 'SYN Flood', 'DNS Spoofing', 'Large Packets', 'Flood Attacks'],
+            datasets: [{
+                data: [0, 0, 0, 0, 0, 0],
+                backgroundColor: [
+                    '#EF4444', // Red
+                    '#F59E0B', // Amber
+                    '#10B981', // Green
+                    '#3B82F6', // Blue
+                    '#8B5CF6', // Purple
+                    '#EC4899'  // Pink
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                }
+            }
+        }
+    });
+    
+    // Variables to track threat counts
+    let threatCounts = {
+        'ARP': 0,
+        'PortScan': 0,
+        'SYNFlood': 0,
+        'DNS': 0,
+        'LargePacket': 0,
+        'Flood': 0
+    };
+    
+    // Function to update chart
+    function updateChart() {
+        threatChart.data.datasets[0].data = [
+            threatCounts['ARP'],
+            threatCounts['PortScan'],
+            threatCounts['SYNFlood'],
+            threatCounts['DNS'],
+            threatCounts['LargePacket'],
+            threatCounts['Flood']
+        ];
+        threatChart.update();
+    }
+    
+    // Get network information
+    function getNetworkInfo() {
+        fetch('/api/network-info')
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    document.getElementById('local-ip').textContent = data.local_ip || '-';
+                    document.getElementById('gateway-ip').textContent = data.gateway || '-';
+                    
+                    // Get interface and MAC from threats API
+                    fetch('/api/threats/info')
+                        .then(response => response.json())
+                        .then(threatData => {
+                            if (threatData.status === 'success') {
+                                document.getElementById('local-mac').textContent = threatData.local_mac || '-';
+                                document.getElementById('interface-name').textContent = threatData.interface || '-';
+                            }
+                            document.getElementById('network-info-loading').classList.add('hidden');
+                            document.getElementById('network-info').classList.remove('hidden');
+                        })
+                        .catch(error => {
+                            console.error('Error fetching threat info:', error);
+                            document.getElementById('network-info-loading').classList.add('hidden');
+                            document.getElementById('network-info').classList.remove('hidden');
+                        });
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching network info:', error);
+                document.getElementById('network-info-loading').classList.add('hidden');
+                document.getElementById('network-info').classList.remove('hidden');
+            });
+    }
+    
+    // Check monitoring status
+    function checkStatus() {
+        fetch('/api/threats/status')
+            .then(response => response.json())
+            .then(data => {
+                const statusIndicator = document.getElementById('status-indicator');
+                const statusText = document.getElementById('status-text');
+                const startButton = document.getElementById('start-monitoring');
+                const stopButton = document.getElementById('stop-monitoring');
+                
+                if (data.status === 'success') {
+                    if (data.is_monitoring) {
+                        statusIndicator.classList.remove('bg-gray-400', 'bg-red-500');
+                        statusIndicator.classList.add('bg-green-500');
+                        statusText.textContent = 'Monitoring Active';
+                        
+                        startButton.disabled = true;
+                        startButton.classList.add('opacity-50', 'cursor-not-allowed');
+                        stopButton.disabled = false;
+                        stopButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                        
+                        // Update stats
+                        document.getElementById('packets-count').textContent = data.stats.total_packets || 0;
+                        document.getElementById('suspicious-ips-count').textContent = data.stats.suspicious_ips || 0;
+                        document.getElementById('suspicious-macs-count').textContent = data.stats.suspicious_macs || 0;
+                        document.getElementById('alerts-count').textContent = data.stats.total_alerts || 0;
+                        
+                        // Update suspicious IPs
+                        updateSuspiciousEntities('ips', data.suspicious_ips || []);
+                        
+                        // Update suspicious MACs
+                        updateSuspiciousEntities('macs', data.suspicious_macs || []);
+                        
+                        // Update alerts
+                        if (data.recent_alerts && data.recent_alerts.length > 0) {
+                            updateAlerts(data.recent_alerts);
+                            
+                            // Update threat counts for chart
+                            data.recent_alerts.forEach(alert => {
+                                const type = alert.type.split(' ')[0]; // Get first word as type
+                                if (threatCounts[type] !== undefined) {
+                                    threatCounts[type]++;
+                                }
+                            });
+                            
+                            updateChart();
+                        }
+                    } else {
+                        statusIndicator.classList.remove('bg-gray-400', 'bg-green-500');
+                        statusIndicator.classList.add('bg-red-500');
+                        statusText.textContent = 'Monitoring Inactive';
+                        
+                        startButton.disabled = false;
+                        startButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                        stopButton.disabled = true;
+                        stopButton.classList.add('opacity-50', 'cursor-not-allowed');
+                    }
+                } else {
+                    statusIndicator.classList.remove('bg-green-500', 'bg-red-500');
+                    statusIndicator.classList.add('bg-gray-400');
+                    statusText.textContent = 'Status Unknown';
+                }
+            })
+            .catch(error => {
+                console.error('Error checking status:', error);
+                const statusIndicator = document.getElementById('status-indicator');
+                const statusText = document.getElementById('status-text');
+                statusIndicator.classList.remove('bg-green-500', 'bg-red-500');
+                statusIndicator.classList.add('bg-gray-400');
+                statusText.textContent = 'Status Unknown';
+            });
+    }
+    
+    // Update suspicious entities (IPs or MACs)
+    function updateSuspiciousEntities(type, entities) {
+        const containerId = `suspicious-${type}-container`;
+        const noEntitiesId = `no-suspicious-${type}`;
+        const container = document.getElementById(containerId);
+        const noEntities = document.getElementById(noEntitiesId);
+        
+        if (entities.length === 0) {
+            noEntities.classList.remove('hidden');
+            return;
+        }
+        
+        noEntities.classList.add('hidden');
+        
+        // Clear existing entities except the "no entities" message
+        Array.from(container.children).forEach(child => {
+            if (child.id !== noEntitiesId) {
+                child.remove();
+            }
+        });
+        
+        // Add new entities
+        entities.forEach(entity => {
+            const entityDiv = document.createElement('div');
+            entityDiv.className = 'flex items-center justify-between p-2 bg-gray-50 rounded';
+            
+            let entityInfo = '';
+            if (type === 'ips') {
+                entityInfo = `<span class="font-medium">${entity.ip}</span>`;
+                if (entity.hostname) {
+                    entityInfo += `<span class="text-sm text-gray-500 ml-2">${entity.hostname}</span>`;
+                }
+            } else {
+                entityInfo = `<span class="font-medium">${entity.mac}</span>`;
+                if (entity.vendor) {
+                    entityInfo += `<span class="text-sm text-gray-500 ml-2">${entity.vendor}</span>`;
+                }
+            }
+            
+            entityDiv.innerHTML = `
+                <div>${entityInfo}</div>
+                <div class="text-sm text-gray-500">First seen: ${new Date(entity.first_seen * 1000).toLocaleString()}</div>
+            `;
+            
+            container.appendChild(entityDiv);
+        });
+    }
+    
+    // Update alerts
+    function updateAlerts(alerts) {
+        const container = document.getElementById('alerts-container');
+        const noAlerts = document.getElementById('no-alerts');
+        
+        if (alerts.length === 0) {
+            noAlerts.classList.remove('hidden');
+            return;
+        }
+        
+        noAlerts.classList.add('hidden');
+        
+        // Clear existing alerts except the "no alerts" message
+        Array.from(container.children).forEach(child => {
+            if (child.id !== 'no-alerts') {
+                child.remove();
+            }
+        });
+        
+        // Add new alerts
+        alerts.forEach(alert => {
+            const alertDiv = document.createElement('div');
+            
+            // Set alert severity color
+            let severityClass = 'border-yellow-500';
+            if (alert.severity === 'high') {
+                severityClass = 'border-red-500';
+            } else if (alert.severity === 'medium') {
+                severityClass = 'border-orange-500';
+            } else if (alert.severity === 'low') {
+                severityClass = 'border-blue-500';
+            }
+            
+            alertDiv.className = `p-4 border-l-4 ${severityClass} bg-gray-50 rounded`;
+            
+            alertDiv.innerHTML = `
+                <div class="flex justify-between">
+                    <h3 class="font-medium">${alert.type}</h3>
+                    <span class="text-sm text-gray-500">${new Date(alert.timestamp * 1000).toLocaleString()}</span>
+                </div>
+                <p class="text-gray-700 mt-1">${alert.message}</p>
+                <div class="mt-2 text-sm text-gray-500">
+                    <span class="font-medium">Source:</span> ${alert.source || 'Unknown'}
+                    ${alert.destination ? `<span class="ml-3 font-medium">Destination:</span> ${alert.destination}` : ''}
+                </div>
+            `;
+            
+            container.prepend(alertDiv); // Add newest alerts at the top
+        });
+    }
+    
+    // Start monitoring
+    document.getElementById('start-monitoring').addEventListener('click', function() {
+        const button = this;
+        button.disabled = true;
+        button.classList.add('opacity-50', 'cursor-not-allowed');
+        
+        fetch('/api/threats/start', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                checkStatus();
+            } else {
+                alert('Failed to start monitoring: ' + data.message);
+                button.disabled = false;
+                button.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        })
+        .catch(error => {
+            console.error('Error starting monitoring:', error);
+            alert('Error starting monitoring. See console for details.');
+            button.disabled = false;
+            button.classList.remove('opacity-50', 'cursor-not-allowed');
+        });
+    });
+    
+    // Stop monitoring
+    document.getElementById('stop-monitoring').addEventListener('click', function() {
+        const button = this;
+        button.disabled = true;
+        button.classList.add('opacity-50', 'cursor-not-allowed');
+        
+        fetch('/api/threats/stop', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                checkStatus();
+            } else {
+                alert('Failed to stop monitoring: ' + data.message);
+                button.disabled = false;
+                button.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        })
+        .catch(error => {
+            console.error('Error stopping monitoring:', error);
+            alert('Error stopping monitoring. See console for details.');
+            button.disabled = false;
+            button.classList.remove('opacity-50', 'cursor-not-allowed');
+        });
+    });
+    
+    // Clear alerts
+    document.getElementById('clear-alerts').addEventListener('click', function() {
+        fetch('/api/threats/clear-alerts', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                document.getElementById('no-alerts').classList.remove('hidden');
+                Array.from(document.getElementById('alerts-container').children).forEach(child => {
+                    if (child.id !== 'no-alerts') {
+                        child.remove();
+                    }
+                });
+                
+                // Reset chart
+                Object.keys(threatCounts).forEach(key => {
+                    threatCounts[key] = 0;
+                });
+                updateChart();
+                
+                // Update status to refresh counters
+                checkStatus();
+            }
+        })
+        .catch(error => {
+            console.error('Error clearing alerts:', error);
+        });
+    });
+    
+    // Initial load
+    getNetworkInfo();
+    checkStatus();
+    
+    // Refresh status every 3 seconds
+    setInterval(checkStatus, 3000);
+});
+</script>
+{% endblock %}

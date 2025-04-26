@@ -1,0 +1,476 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <!-- Devices Card -->
+    <div class="bg-white p-6 rounded-lg shadow hover-shadow transition-shadow">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-crimson mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                </svg>
+                <h2 class="text-xl font-semibold text-gray-800">Devices</h2>
+            </div>
+            <span id="deviceCount" class="text-2xl font-bold text-blue-600">0</span>
+        </div>
+        <p class="text-gray-600 mb-4">Total devices discovered on your network</p>
+        <a href="/devices" class="text-crimson hover:text-crimson-dark flex items-center font-medium">
+            View all devices
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+        </a>
+    </div>
+    
+    <!-- Active Devices Card -->
+    <div class="bg-white p-6 rounded-lg shadow hover-shadow transition-shadow">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                <h2 class="text-xl font-semibold text-gray-800">Active</h2>
+            </div>
+            <span id="activeCount" class="text-2xl font-bold text-green-600">0</span>
+        </div>
+        <p class="text-gray-600 mb-4">Devices currently active on your network</p>
+        <a href="/devices" class="text-crimson hover:text-crimson-dark flex items-center font-medium">
+            View active devices
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+        </a>
+    </div>
+    
+    <!-- Open Ports Card -->
+    <div class="bg-white p-6 rounded-lg shadow hover-shadow transition-shadow">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <h2 class="text-xl font-semibold text-gray-800">Open Ports</h2>
+            </div>
+            <span id="portCount" class="text-2xl font-bold text-yellow-600">0</span>
+        </div>
+        <p class="text-gray-600 mb-4">Total open ports detected across all devices</p>
+        <a href="/port-scanner" class="text-crimson hover:text-crimson-dark flex items-center font-medium">
+            View port scanner
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+        </a>
+    </div>
+    
+    <!-- Vulnerabilities Card -->
+    <div class="bg-white p-6 rounded-lg shadow hover-shadow transition-shadow">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <h2 class="text-xl font-semibold text-gray-800">Vulnerabilities</h2>
+            </div>
+            <span id="vulnCount" class="text-2xl font-bold text-red-600">0</span>
+        </div>
+        <p class="text-gray-600 mb-4">Potential security issues detected on your network</p>
+        <a href="/threats" class="text-crimson hover:text-crimson-dark flex items-center font-medium">
+            View vulnerabilities
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+        </a>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+    <!-- Recent Devices Table -->
+    <div class="bg-white p-6 rounded-lg shadow hover-shadow transition-shadow lg:col-span-2">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-semibold text-gray-800">Recent Devices</h2>
+            <a href="/devices" class="text-crimson hover:text-crimson-dark text-sm font-medium">View all</a>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Address</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hostname</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendor</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="recentDevicesTableBody" class="bg-white divide-y divide-gray-200">
+                    <tr>
+                        <td colspan="5" class="px-6 py-4 text-center text-gray-500">Loading devices...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Network Status Card -->
+    <div class="bg-white p-6 rounded-lg shadow hover-shadow transition-shadow">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-semibold text-gray-800">Network Status</h2>
+            <button id="refreshNetworkBtn" class="text-crimson hover:text-crimson-dark transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+            </button>
+        </div>
+        
+        <div id="networkInfo" class="mb-6">
+            <div class="flex justify-between mb-2">
+                <span class="text-gray-600">Gateway:</span>
+                <span id="gatewayIP" class="font-medium">-</span>
+            </div>
+            <div class="flex justify-between mb-2">
+                <span class="text-gray-600">Network Range:</span>
+                <span id="networkRange" class="font-medium">-</span>
+            </div>
+            <div class="flex justify-between mb-2">
+                <span class="text-gray-600">Local IP:</span>
+                <span id="localIP" class="font-medium">-</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-600">Hostname:</span>
+                <span id="hostname" class="font-medium">-</span>
+            </div>
+        </div>
+        
+        <div id="dependencyStatus" class="mb-6">
+            <h3 class="text-lg font-medium text-gray-800 mb-2">Dependencies</h3>
+            <div class="flex justify-between mb-2">
+                <span class="text-gray-600">Npcap:</span>
+                <span id="npcapStatus" class="font-medium text-gray-500">Checking...</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-600">WinPcap:</span>
+                <span id="winpcapStatus" class="font-medium text-gray-500">Checking...</span>
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <button id="quickScanBtn" class="w-full bg-crimson hover:bg-crimson-dark text-white px-4 py-2 rounded-md transition-colors">
+                Quick Network Scan
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Recent Scans -->
+    <div class="bg-white p-6 rounded-lg shadow hover-shadow transition-shadow">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-semibold text-gray-800">Recent Scans</h2>
+            <a href="/scan-history" class="text-crimson hover:text-crimson-dark text-sm font-medium">View all</a>
+        </div>
+        
+        <div id="recentScans" class="space-y-4">
+            <div class="text-center text-gray-500">Loading scan history...</div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="bg-white p-6 rounded-lg shadow hover-shadow transition-shadow">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-semibold text-gray-800">Quick Actions</h2>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <a href="/devices" class="bg-gray-100 hover:bg-gray-200 p-4 rounded-lg flex flex-col items-center justify-center transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-crimson mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                </svg>
+                <span class="text-gray-800 font-medium">Manage Devices</span>
+            </a>
+            
+            <a href="/port-scanner" class="bg-gray-100 hover:bg-gray-200 p-4 rounded-lg flex flex-col items-center justify-center transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-crimson mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span class="text-gray-800 font-medium">Port Scanner</span>
+            </a>
+            
+            <a href="/threats" class="bg-gray-100 hover:bg-gray-200 p-4 rounded-lg flex flex-col items-center justify-center transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-crimson mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <span class="text-gray-800 font-medium">Vulnerability Scan</span>
+            </a>
+            
+            <a href="/traffic" class="bg-gray-100 hover:bg-gray-200 p-4 rounded-lg flex flex-col items-center justify-center transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-crimson mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                </svg>
+                <span class="text-gray-800 font-medium">Traffic Monitor</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Load summary data
+    loadSummaryData();
+    
+    // Load recent devices
+    loadRecentDevices();
+    
+    // Load network info
+    loadNetworkInfo();
+    
+    // Load recent scans
+    loadRecentScans();
+    
+    // Check dependencies
+    checkDependencies();
+    
+    // Refresh network button
+    document.getElementById('refreshNetworkBtn').addEventListener('click', function() {
+        loadNetworkInfo();
+        checkDependencies();
+    });
+    
+    // Quick scan button
+    document.getElementById('quickScanBtn').addEventListener('click', function() {
+        startQuickScan();
+    });
+});
+
+function loadSummaryData() {
+    fetch('/api/devices/summary')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'success') {
+                document.getElementById('deviceCount').textContent = data.total;
+                document.getElementById('activeCount').textContent = data.active;
+                document.getElementById('portCount').textContent = data.open_ports;
+                document.getElementById('vulnCount').textContent = data.vulnerabilities;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading summary data:', error);
+            document.getElementById('deviceCount').textContent = 'Error';
+            document.getElementById('activeCount').textContent = 'Error';
+            document.getElementById('portCount').textContent = 'Error';
+            document.getElementById('vulnCount').textContent = 'Error';
+        });
+}
+
+function loadRecentDevices() {
+    fetch('/api/devices?limit=5')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            const tableBody = document.getElementById('recentDevicesTableBody');
+            tableBody.innerHTML = '';
+            
+            if (data.status === 'success' && data.data && data.data.devices && data.data.devices.length > 0) {
+                data.data.devices.forEach(device => {
+                    const statusClass = device.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800';
+                    
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-gray-50 transition-colors';
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${device.ip || '-'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${device.hostname || '-'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${device.vendor || '-'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
+                                ${device.status || 'Unknown'}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <a href="/devices" class="text-crimson hover:text-crimson-dark">Details</a>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } else {
+                const row = document.createElement('tr');
+                row.innerHTML = '<td colspan="5" class="px-6 py-4 text-center text-gray-500">No devices found. Run a scan to discover devices.</td>';
+                tableBody.appendChild(row);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading recent devices:', error);
+            const tableBody = document.getElementById('recentDevicesTableBody');
+            tableBody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Error loading devices. Please try again.</td></tr>';
+        });
+}
+
+function loadNetworkInfo() {
+    fetch('/api/network-info')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'success') {
+                document.getElementById('gatewayIP').textContent = data.gateway || '-';
+                document.getElementById('networkRange').textContent = data.network_range || '-';
+                document.getElementById('localIP').textContent = data.local_ip || '-';
+                document.getElementById('hostname').textContent = data.hostname || '-';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading network info:', error);
+            document.getElementById('gatewayIP').textContent = 'Error';
+            document.getElementById('networkRange').textContent = 'Error';
+            document.getElementById('localIP').textContent = 'Error';
+            document.getElementById('hostname').textContent = 'Error';
+        });
+}
+
+function loadRecentScans() {
+    fetch('/api/scan-history?limit=5')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            const scansContainer = document.getElementById('recentScans');
+            scansContainer.innerHTML = '';
+            
+            if (data.status === 'success' && data.history && data.history.length > 0) {
+                data.history.forEach(scan => {
+                    const scanItem = document.createElement('div');
+                    scanItem.className = 'border-l-4 border-crimson pl-4 py-2 hover:bg-gray-50 transition-colors';
+                    
+                    const timestamp = new Date(scan.timestamp).toLocaleString();
+                    const deviceCount = scan.devices_found || 0;
+                    
+                    scanItem.innerHTML = `
+                        <div class="flex justify-between">
+                            <span class="text-gray-800 font-medium">${scan.ip_range || 'Unknown'}</span>
+                            <span class="text-gray-500 text-sm">${timestamp}</span>
+                        </div>
+                        <div class="text-gray-600 text-sm">Found ${deviceCount} devices</div>
+                    `;
+                    
+                    scansContainer.appendChild(scanItem);
+                });
+            } else {
+                scansContainer.innerHTML = '<div class="text-center text-gray-500">No scan history available</div>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading scan history:', error);
+            document.getElementById('recentScans').innerHTML = '<div class="text-center text-gray-500">Error loading scan history</div>';
+        });
+}
+
+function checkDependencies() {
+    fetch('/api/check-dependencies')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'success') {
+                const npcapStatus = document.getElementById('npcapStatus');
+                const winpcapStatus = document.getElementById('winpcapStatus');
+                
+                if (data.dependencies.npcap) {
+                    npcapStatus.textContent = 'Installed';
+                    npcapStatus.className = 'font-medium text-green-600';
+                } else {
+                    npcapStatus.textContent = 'Not Installed';
+                    npcapStatus.className = 'font-medium text-red-600';
+                }
+                
+                if (data.dependencies.winpcap) {
+                    winpcapStatus.textContent = 'Installed';
+                    winpcapStatus.className = 'font-medium text-green-600';
+                } else {
+                    winpcapStatus.textContent = 'Not Installed';
+                    winpcapStatus.className = 'font-medium text-red-600';
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error checking dependencies:', error);
+            document.getElementById('npcapStatus').textContent = 'Check Failed';
+            document.getElementById('npcapStatus').className = 'font-medium text-red-600';
+            document.getElementById('winpcapStatus').textContent = 'Check Failed';
+            document.getElementById('winpcapStatus').className = 'font-medium text-red-600';
+        });
+}
+
+function startQuickScan() {
+    const networkRange = document.getElementById('networkRange').textContent;
+    
+    if (networkRange === '-' || networkRange === 'Error') {
+        alert('Network information not available. Please refresh network info first.');
+        return;
+    }
+    
+    // Show loading state
+    const quickScanBtn = document.getElementById('quickScanBtn');
+    const originalText = quickScanBtn.textContent;
+    quickScanBtn.disabled = true;
+    quickScanBtn.textContent = 'Scanning...';
+    
+    // Start scan
+    fetch('/api/scan', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            ip_range: networkRange,
+            timeout: 0.5,
+            max_threads: 100
+        }),
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.status === 'started') {
+            alert('Quick scan started! Check the Devices page for results.');
+            
+            // Reload data after a delay
+            setTimeout(() => {
+                loadSummaryData();
+                loadRecentDevices();
+                loadRecentScans();
+            }, 5000);
+        } else {
+            alert('Failed to start scan: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error starting scan:', error);
+        alert('Failed to start scan: ' + error.message);
+    })
+    .finally(() => {
+        // Reset button
+        quickScanBtn.disabled = false;
+        quickScanBtn.textContent = originalText;
+    });
+}
+</script>
+{% endblock %}

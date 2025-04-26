@@ -1,0 +1,188 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<header class="mb-8">
+    <div class="flex justify-between items-center">
+        <h1 class="text-3xl font-bold text-gray-800">Scan History</h1>
+        <div class="flex space-x-2">
+            <button id="exportBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-md">
+                Export History
+            </button>
+        </div>
+    </div>
+</header>
+
+<div id="alertContainer" class="mb-6 hidden">
+    <!-- Alert will be inserted here -->
+</div>
+
+<div class="bg-white p-6 rounded-lg shadow">
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date/Time</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Range</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Devices Found</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="historyTableBody" class="bg-white divide-y divide-gray-200">
+                <tr id="loadingRow">
+                    <td colspan="4" class="px-6 py-4 text-center text-gray-500">Loading scan history...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Load scan history
+    loadScanHistory();
+    
+    // Export button
+    document.getElementById('exportBtn').addEventListener('click', function() {
+        exportHistory();
+    });
+});
+
+function showAlert(message, type = 'error') {
+    const alertContainer = document.getElementById('alertContainer');
+    alertContainer.innerHTML = '';
+    alertContainer.classList.remove('hidden');
+    
+    const alertClass = type === 'error' ? 'bg-red-100 border-red-400 text-red-700' : 'bg-green-100 border-green-400 text-green-700';
+    
+    const alert = document.createElement('div');
+    alert.className = `${alertClass} px-4 py-3 rounded relative border`;
+    alert.role = 'alert';
+    alert.innerHTML = `
+        <span class="block sm:inline">${message}</span>
+        <span class="absolute top-0 bottom-0 right-0 px-4 py-3">
+            <button type="button" class="close-alert">
+                <span class="sr-only">Close</span>
+                <span class="text-2xl">&times;</span>
+            </button>
+        </span>
+    `;
+    
+    alertContainer.appendChild(alert);
+    
+    // Add event listener to close button
+    alert.querySelector('.close-alert').addEventListener('click', function() {
+        alertContainer.classList.add('hidden');
+    });
+    
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+        alertContainer.classList.add('hidden');
+    }, 5000);
+}
+
+function loadScanHistory() {
+    fetch('/api/scan-history')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'success' && data.history && data.history.length > 0) {
+                displayHistory(data.history);
+            } else {
+                document.getElementById('loadingRow').innerHTML = '<td colspan="4" class="px-6 py-4 text-center text-gray-500">No scan history available.</td>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading scan history:', error);
+            document.getElementById('loadingRow').innerHTML = '<td colspan="4" class="px-6 py-4 text-center text-gray-500">Error loading scan history. Please try again.</td>';
+            showAlert('Error loading scan history: ' + error.message);
+        });
+}
+
+function displayHistory(history) {
+    const tableBody = document.getElementById('historyTableBody');
+    
+    // Clear table
+    tableBody.innerHTML = '';
+    
+    // Sort history by timestamp (newest first)
+    history.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    
+    // Add history to table
+    history.forEach(scan => {
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-gray-50';
+        
+        const scanDate = new Date(scan.timestamp);
+        
+        row.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${scanDate.toLocaleString()}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${scan.ip_range}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${scan.device_count}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <button class="text-blue-600 hover:text-blue-900 view-details-btn" data-timestamp="${scan.timestamp}">
+                    View Details
+                </button>
+            </td>
+        `;
+        
+        tableBody.appendChild(row);
+    });
+    
+    // Add event listeners to view details buttons
+    document.querySelectorAll('.view-details-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const timestamp = this.dataset.timestamp;
+            viewScanDetails(timestamp);
+        });
+    });
+}
+
+function viewScanDetails(timestamp) {
+    // In a real implementation, you would make an API call to get scan details
+    // For now, we'll just show a message
+    showAlert(`Viewing scan details for ${new Date(timestamp).toLocaleString()}`, 'success');
+}
+
+function exportHistory() {
+    fetch('/api/scan-history')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'success' && data.history && data.history.length > 0) {
+                // Create CSV content
+                let csv = 'Date/Time,IP Range,Devices Found\n';
+                
+                data.history.forEach(scan => {
+                    const scanDate = new Date(scan.timestamp).toLocaleString();
+                    csv += `"${scanDate}","${scan.ip_range}",${scan.device_count}\n`;
+                });
+                
+                // Create download link
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `scan_history_${new Date().toISOString().split('T')[0]}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } else {
+                showAlert('No scan history to export');
+            }
+        })
+        .catch(error => {
+            console.error('Error exporting scan history:', error);
+            showAlert('Error exporting scan history: ' + error.message);
+        });
+}
+</script>
+{% endblock %}

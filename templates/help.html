@@ -1,0 +1,131 @@
+{% extends 'layout.html' %}
+
+
+{% block content %}
+<header class="mb-8">
+    <div class="flex justify-between items-center">
+        <h1 class="text-3xl font-bold text-gray-800">Help & Troubleshooting</h1>
+    </div>
+</header>
+
+<div class="bg-white p-6 rounded-lg shadow mb-6">
+    <h2 class="text-xl font-semibold text-gray-800 mb-4">Getting Started</h2>
+    
+    <div class="prose max-w-none">
+        <p>Welcome to the Network Scanner application. This tool helps you discover and analyze devices on your network, scan for open ports, and identify potential vulnerabilities.</p>
+        
+        <h3 class="mt-4">Main Features</h3>
+        <ul>
+            <li><strong>Network Discovery</strong> - Scan your network to find all connected devices</li>
+            <li><strong>Port Scanning</strong> - Check which ports are open on specific devices</li>
+            <li><strong>Vulnerability Scanning</strong> - Identify potential security issues</li>
+            <li><strong>Traffic Monitoring</strong> - Analyze network traffic patterns</li>
+        </ul>
+    </div>
+</div>
+
+<div class="bg-white p-6 rounded-lg shadow mb-6">
+    <h2 class="text-xl font-semibold text-gray-800 mb-4">Troubleshooting</h2>
+    
+    <div class="space-y-6">
+        <div>
+            <h3 class="text-lg font-medium text-gray-800 mb-2">Npcap Installation Issues</h3>
+            
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                <p class="mb-2">This application uses Npcap for packet capture functionality. If you're experiencing issues with network scanning or traffic monitoring, follow these steps:</p>
+                
+                <ol class="list-decimal pl-5 space-y-2">
+                    <li>Download Npcap from the official website: <a href="https://npcap.com/#download" class="text-blue-600 hover:underline" target="_blank">https://npcap.com</a></li>
+                    <li>Run the installer with administrator privileges</li>
+                    <li>During installation, make sure to select the following options:
+                        <ul class="list-disc pl-5 mt-1">
+                            <li>Install Npcap in WinPcap API-compatible Mode</li>
+                            <li>Support raw 802.11 traffic</li>
+                        </ul>
+                    </li>
+                    <li>After installation, restart your computer</li>
+                    <li>Run this application with administrator privileges</li>
+                </ol>
+                
+                <p class="mt-2">If you still experience issues after following these steps, try the following:</p>
+                
+                <ul class="list-disc pl-5 mt-1">
+                    <li>Uninstall any existing WinPcap installation before installing Npcap</li>
+                    <li>Check if your antivirus software is blocking the application</li>
+                    <li>Verify that your network adapter is properly configured</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div>
+            <h3 class="text-lg font-medium text-gray-800 mb-2">Network Scanning Not Working</h3>
+            
+            <div class="bg-blue-50 border-l-4 border-blue-400 p-4">
+                <p class="mb-2">If network scanning is not working properly, check the following:</p>
+                
+                <ul class="list-disc pl-5 space-y-1">
+                    <li>Make sure you're connected to a network</li>
+                    <li>Verify that you have the correct IP range for your network</li>
+                    <li>Increase the scan timeout value for slower networks</li>
+                    <li>Check if your firewall is blocking the scan</li>
+                    <li>Run the application with administrator privileges</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div>
+            <h3 class="text-lg font-medium text-gray-800 mb-2">Port Scanning Issues</h3>
+            
+            <div class="bg-blue-50 border-l-4 border-blue-400 p-4">
+                <p class="mb-2">If port scanning is not working correctly:</p>
+                
+                <ul class="list-disc pl-5 space-y-1">
+                    <li>Make sure the target device is online and reachable</li>
+                    <li>Try reducing the number of threads to avoid overwhelming your system</li>
+                    <li>Increase the timeout value for more reliable results</li>
+                    <li>Some networks may block port scanning activities</li>
+                    <li>Check if your firewall is blocking outgoing connections</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="bg-white p-6 rounded-lg shadow">
+    <h2 class="text-xl font-semibold text-gray-800 mb-4">System Requirements</h2>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+            <h3 class="text-lg font-medium text-gray-800 mb-2">Software Requirements</h3>
+            
+            <ul class="list-disc pl-5 space-y-1">
+                <li>Python 3.7 or higher</li>
+                <li>Npcap (for packet capture functionality)</li>
+                <li>Scapy library (for advanced network operations)</li>
+                <li>Modern web browser</li>
+            </ul>
+            
+            <h4 class="text-md font-medium text-gray-800 mt-4 mb-2">Required Python Packages</h4>
+            <ul class="list-disc pl-5 space-y-1">
+                <li>Flask</li>
+                <li>Scapy (optional, but recommended)</li>
+            </ul>
+        </div>
+        
+        <div>
+            <h3 class="text-lg font-medium text-gray-800 mb-2">Hardware Requirements</h3>
+            
+            <ul class="list-disc pl-5 space-y-1">
+                <li>Any modern computer with network connectivity</li>
+                <li>Minimum 4GB RAM recommended</li>
+                <li>Network adapter compatible with Npcap</li>
+            </ul>
+            
+            <div class="bg-gray-50 p-4 mt-4 rounded-md">
+                <h4 class="text-md font-medium text-gray-800 mb-2">Administrator Privileges</h4>
+                <p class="text-sm text-gray-600">This application requires administrator privileges to perform network scanning and packet capture operations.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

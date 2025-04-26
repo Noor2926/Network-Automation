@@ -1,0 +1,27 @@
+
+---
+- name: Configure network device
+  hosts: network_devices
+  gather_facts: false
+  connection: ansible.netcommon.netconf
+  tasks:
+    - name: Configure hostname, interface, and NTP
+      network_config:
+        hostname: "{{ device_hostname | default('router1') }}"
+        interface:
+          name: "{{ interface_name | default('1/1/1') }}"
+          description: "{{ interface_description | default('Ansible Configured Interface') }}"
+          ipv4_address: "{{ interface_ip | default('192.168.1.1') }}"
+          subnet_mask: "{{ interface_mask | default('255.255.255.255') }}"
+        ntp_server: "{{ ntp_server | default('pool.ntp.org') }}"
+        use_dhcp: "{{ use_dhcp | default(false) }}"
+        state: present
+        backup: true
+        backup_options:
+          filename: "backup_{{ inventory_hostname }}.cfg"
+          dir_path: "/ansible/backups"
+      register: result
+
+    - name: Display configuration result
+      debug:
+        msg: "{{ result }}"

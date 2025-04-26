@@ -1,0 +1,1108 @@
+{% extends 'layout.html' %}
+
+{% block title %}Port Scanner{% endblock %}
+
+{% block content %}
+<div class="container max-w-6xl mx-auto p-4">
+    <!-- Header -->
+    <header class="mb-6">
+        <div class="flex justify-between items-center">
+            <h1 class="text-3xl font-bold text-gray-800">Port Scanner</h1>
+            <div class="flex space-x-2">
+                <button id="historyBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1 inline" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" />
+                    </svg>
+                    History
+                </button>
+                <button id="helpBtn" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1 inline" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                    </svg>
+                    Help
+                </button>
+                <button id="backBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1 inline" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+                    </svg>
+                    Back
+                </button>
+            </div>
+        </div>
+        <p class="text-gray-600 mt-2">Scan for open ports on a target IP address to identify running services and potential vulnerabilities.</p>
+    </header>
+
+    <!-- Alert Container -->
+    <div id="alertContainer" class="mb-6 hidden" role="alert" aria-live="assertive"></div>
+
+    <!-- Scan Configuration -->
+    <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            Scan Configuration
+        </h2>
+        
+        <form id="scanForm" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <label for="targetIP" class="block text-sm font-medium text-gray-700 mb-1">Target IP</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                        </svg>
+                    </div>
+                    <input type="text" id="targetIP" name="targetIP" class="w-full border border-gray-300 rounded-md pl-10 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="192.168.1.1" required aria-describedby="ipHelp">
+                </div>
+                <p id="ipHelp" class="text-xs text-gray-500 mt-1">Enter the IP address you want to scan (e.g., 192.168.1.1)</p>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Port Range</label>
+                <div class="flex space-x-2 items-center">
+                    <div class="relative flex-1">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span class="text-gray-500 sm:text-sm">From</span>
+                        </div>
+                        <input type="number" id="portStart" name="portStart" value="1" min="1" max="65535" class="w-full border border-gray-300 rounded-md pl-14 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                    </div>
+                    <span class="text-gray-600">to</span>
+                    <div class="relative flex-1">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span class="text-gray-500 sm:text-sm">To</span>
+                        </div>
+                        <input type="number" id="portEnd" name="portEnd" value="1024" min="1" max="65535" class="w-full border border-gray-300 rounded-md pl-10 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                    </div>
+                </div>
+                <div class="flex mt-2 space-x-2">
+                    <button type="button" id="commonPortsBtn" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-800 px-2 py-1 rounded">Common (1-1024)</button>
+                    <button type="button" id="webPortsBtn" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-800 px-2 py-1 rounded">Web (80,443,8080,8443)</button>
+                    <button type="button" id="databasePortsBtn" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-800 px-2 py-1 rounded">DB (3306,5432,1433)</button>
+                </div>
+            </div>
+            
+            <div>
+                <label for="scanTimeout" class="block text-sm font-medium text-gray-700 mb-1">Timeout (seconds)</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <input type="number" id="scanTimeout" name="scanTimeout" value="1" min="0.1" max="10" step="0.1" class="w-full border border-gray-300 rounded-md pl-10 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">Lower values are faster but may miss some ports</p>
+            </div>
+            
+            <div>
+                <label for="maxThreads" class="block text-sm font-medium text-gray-700 mb-1">Max Threads</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                    </div>
+                    <input type="number" id="maxThreads" name="maxThreads" value="100" min="10" max="500" class="w-full border border-gray-300 rounded-md pl-10 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">Higher values scan faster but use more resources</p>
+            </div>
+            
+            <div class="col-span-1 md:col-span-2 mt-4 flex flex-wrap gap-2">
+                <button type="submit" id="startScanBtn" class="flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    Start Scan
+                </button>
+                <button type="button" id="autoDetectBtn" class="flex items-center bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    Quick Scan
+                </button>
+                <button type="button" id="cancelScanBtn" class="flex items-center bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 opacity-50" disabled>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    Cancel Scan
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Scan Progress -->
+    <div id="scanProgressContainer" class="mb-6 hidden">
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-indigo-600 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                Scan in Progress
+            </h3>
+            <div class="flex justify-between mb-1">
+                <span class="text-sm font-medium text-gray-700" id="scanProgressLabel">Scanning ports...</span>
+                <span id="scanProgressText" class="text-sm font-medium text-gray-700">0%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2.5 mb-2">
+                <div id="scanProgressBar" class="bg-indigo-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+            <div class="flex flex-wrap justify-between text-xs text-gray-500 mt-2">
+                <div id="scanCurrentPort" class="flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    Current port: -
+                </div>
+                <div id="scanStats" class="flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    0/0 open ports found
+                </div>
+                <div id="scanTime" class="flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Elapsed: 0s
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scan Results -->
+    <div class="bg-white p-6 rounded-lg shadow-md">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold text-gray-800 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Scan Results
+            </h2>
+            <div class="flex space-x-2">
+                <button id="exportBtn" class="flex items-center bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Export
+                </button>
+                <button id="clearResultsBtn" class="flex items-center bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Clear
+                </button>
+            </div>
+        </div>
+        
+        <div id="resultsContainer" class="hidden">
+            <div class="mb-4 p-4 bg-gray-50 rounded-md">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                        <span class="text-sm font-medium text-gray-500">Target IP:</span>
+                        <span id="resultIP" class="ml-2 text-sm font-medium text-gray-900">-</span>
+                    </div>
+                    <div>
+                        <span class="text-sm font-medium text-gray-500">Scan Date:</span>
+                        <span id="resultDate" class="ml-2 text-sm font-medium text-gray-900">-</span>
+                    </div>
+                    <div>
+                        <span class="text-sm font-medium text-gray-500">Open Ports:</span>
+                        <span id="resultOpenPorts" class="ml-2 text-sm font-medium text-gray-900">0</span>
+                    </div>
+                    <div>
+                        <span class="text-sm font-medium text-gray-500">Scan Duration:</span>
+                        <span id="resultDuration" class="ml-2 text-sm font-medium text-gray-900">-</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Port</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">State</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Risk</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsTableBody" class="bg-white divide-y divide-gray-200"></tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div id="noResultsMessage" class="py-8 text-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <p class="text-gray-500">No scan results yet. Start a scan to discover open ports.</p>
+            <p class="text-gray-400 text-sm mt-2">Use the scan configuration above to begin.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Help Modal -->
+<div id="helpModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+        <div class="p-4 border-b border-gray-200 flex justify-between items-center">
+            <h3 class="text-lg font-semibold">Port Scanner Help</h3>
+            <button id="closeHelpModal" class="text-gray-500 hover:text-gray-700">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <div class="p-4">
+            <div class="space-y-4">
+                <div>
+                    <h4 class="font-medium text-lg">What is a Port Scanner?</h4>
+                    <p class="text-gray-600">A port scanner is a tool that checks which ports are open on a target IP address. Open ports can indicate running services that might be accessible over the network.</p>
+                </div>
+                
+                <div>
+                    <h4 class="font-medium text-lg">How to Use</h4>
+                    <ol class="list-decimal list-inside mt-2 space-y-1 text-gray-600">
+                        <li>Enter the target IP address you want to scan</li>
+                        <li>Select a port range (1-1024 for common ports, or custom range)</li>
+                        <li>Adjust timeout and thread settings if needed</li>
+                        <li>Click "Start Scan" to begin a full scan or "Quick Scan" for common ports only</li>
+                        <li>View results in the table below when the scan completes</li>
+                    </ol>
+                </div>
+                
+                <div>
+                    <h4 class="font-medium text-lg">Common Ports</h4>
+                    <div class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600">
+                        <div>
+                            <p><strong>20, 21</strong> - FTP (File Transfer)</p>
+                            <p><strong>22</strong> - SSH (Secure Shell)</p>
+                            <p><strong>23</strong> - Telnet</p>
+                            <p><strong>25</strong> - SMTP (Email)</p>
+                            <p><strong>53</strong> - DNS (Domain Name System)</p>
+                        </div>
+                        <div>
+                            <p><strong>80</strong> - HTTP (Web)</p>
+                            <p><strong>443</strong> - HTTPS (Secure Web)</p>
+                            <p><strong>3306</strong> - MySQL Database</p>
+                            <p><strong>3389</strong> - RDP (Remote Desktop)</p>
+                            <p><strong>8080, 8443</strong> - Alternative Web Ports</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 class="font-medium text-lg">Security Considerations</h4>
+                    <ul class="list-disc list-inside mt-2 space-y-1 text-gray-600">
+                        <li>Only scan networks you have permission to scan</li>
+                        <li>Port scanning can be detected by security systems</li>
+                        <li>Some services may be vulnerable if exposed to the internet</li>
+                        <li>Consider closing unnecessary ports for better security</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="p-4 border-t border-gray-200 flex justify-end">
+            <button id="closeHelpBtn" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- History Modal -->
+<div id="historyModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+        <div class="p-4 border-b border-gray-200 flex justify-between items-center">
+            <h3 class="text-lg font-semibold">Scan History</h3>
+            <button id="closeHistoryModal" class="text-gray-500 hover:text-gray-700">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <div class="p-4">
+            <div id="historyList" class="space-y-2">
+                <div class="text-center py-4 text-gray-500">Loading scan history...</div>
+            </div>
+        </div>
+        <div class="p-4 border-t border-gray-200 flex justify-end">
+            <button id="closeHistoryBtn" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Connection Test Modal -->
+<div id="connectionModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-md">
+        <div class="p-4 border-b border-gray-200 flex justify-between items-center">
+            <h3 id="connectionModalTitle" class="text-lg font-semibold">Testing Connection</h3>
+            <button id="closeConnectionModal" class="text-gray-500 hover:text-gray-700">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <div class="p-4">
+            <div id="connectionLoading" class="flex justify-center py-4">
+                <svg class="animate-spin h-8 w-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </div>
+            <div id="connectionResult" class="hidden">
+                <div id="connectionStatus" class="mb-4 p-3 rounded-md"></div>
+                <div class="space-y-2">
+                    <div>
+                        <span class="text-sm font-medium text-gray-500">Service:</span>
+                        <span id="connectionService" class="ml-2 text-sm font-medium text-gray-900">-</span>
+                    </div>
+                    <div>
+                        <span class="text-sm font-medium text-gray-500">Description:</span>
+                        <span id="connectionDescription" class="ml-2 text-sm font-medium text-gray-900">-</span>
+                    </div>
+                    <div id="connectionBannerContainer" class="hidden">
+                        <span class="text-sm font-medium text-gray-500">Banner:</span>
+                        <div id="connectionBanner" class="mt-1 p-2 bg-gray-100 rounded text-xs font-mono whitespace-pre-wrap"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="p-4 border-t border-gray-200 flex justify-end">
+            <button id="closeConnectionBtn" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // DOM elements
+    const scanForm = document.getElementById('scanForm');
+    const startScanBtn = document.getElementById('startScanBtn');
+    const autoDetectBtn = document.getElementById('autoDetectBtn');
+    const cancelScanBtn = document.getElementById('cancelScanBtn');
+    const backBtn = document.getElementById('backBtn');
+    const exportBtn = document.getElementById('exportBtn');
+    const clearResultsBtn = document.getElementById('clearResultsBtn');
+    const historyBtn = document.getElementById('historyBtn');
+    const helpBtn = document.getElementById('helpBtn');
+    
+    const commonPortsBtn = document.getElementById('commonPortsBtn');
+    const webPortsBtn = document.getElementById('webPortsBtn');
+    const databasePortsBtn = document.getElementById('databasePortsBtn');
+    
+    const scanProgressContainer = document.getElementById('scanProgressContainer');
+    const scanProgressBar = document.getElementById('scanProgressBar');
+    const scanProgressText = document.getElementById('scanProgressText');
+    const scanProgressLabel = document.getElementById('scanProgressLabel');
+    const scanCurrentPort = document.getElementById('scanCurrentPort');
+    const scanStats = document.getElementById('scanStats');
+    const scanTime = document.getElementById('scanTime');
+    
+    const resultsContainer = document.getElementById('resultsContainer');
+    const noResultsMessage = document.getElementById('noResultsMessage');
+    const resultsTableBody = document.getElementById('resultsTableBody');
+    
+    const resultIP = document.getElementById('resultIP');
+    const resultDate = document.getElementById('resultDate');
+    const resultOpenPorts = document.getElementById('resultOpenPorts');
+    const resultDuration = document.getElementById('resultDuration');
+    
+    const alertContainer = document.getElementById('alertContainer');
+    
+    const helpModal = document.getElementById('helpModal');
+    const closeHelpModal = document.getElementById('closeHelpModal');
+    const closeHelpBtn = document.getElementById('closeHelpBtn');
+    
+    const historyModal = document.getElementById('historyModal');
+    const closeHistoryModal = document.getElementById('closeHistoryModal');
+    const closeHistoryBtn = document.getElementById('closeHistoryBtn');
+    const historyList = document.getElementById('historyList');
+    
+    const connectionModal = document.getElementById('connectionModal');
+    const connectionModalTitle = document.getElementById('connectionModalTitle');
+    const closeConnectionModal = document.getElementById('closeConnectionModal');
+    const closeConnectionBtn = document.getElementById('closeConnectionBtn');
+    const connectionLoading = document.getElementById('connectionLoading');
+    const connectionResult = document.getElementById('connectionResult');
+    const connectionStatus = document.getElementById('connectionStatus');
+    const connectionService = document.getElementById('connectionService');
+    const connectionDescription = document.getElementById('connectionDescription');
+    const connectionBannerContainer = document.getElementById('connectionBannerContainer');
+    const connectionBanner = document.getElementById('connectionBanner');
+    
+    // Variables
+    let scanInterval = null;
+    let scanStartTime = null;
+    let currentIP = null;
+    let elapsedTimeInterval = null;
+    
+    // Functions
+    function showAlert(message, type = 'error') {
+        alertContainer.innerHTML = '';
+        alertContainer.classList.remove('hidden');
+        
+        const alertClass = type === 'error' ? 'bg-red-100 border-red-400 text-red-700' : 'bg-green-100 border-green-400 text-green-700';
+        
+        const alert = document.createElement('div');
+        alert.className = `${alertClass} px-4 py-3 rounded relative border`;
+        alert.role = 'alert';
+        alert.innerHTML = `
+            <span class="block sm:inline">${message}</span>
+            <button type="button" class="close-alert absolute top-0 right-0 px-4 py-3">
+                <span class="sr-only">Close</span>
+                <span>×</span>
+            </button>
+        `;
+        
+        alertContainer.appendChild(alert);
+        
+        // Add event listener to close button
+        alert.querySelector('.close-alert').addEventListener('click', function() {
+            alertContainer.classList.add('hidden');
+        });
+        
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            alertContainer.classList.add('hidden');
+        }, 5000);
+    }
+    
+    function startScan(ip, portStart, portEnd, timeout, maxThreads) {
+        // Reset UI
+        scanProgressBar.style.width = '0%';
+        scanProgressText.textContent = '0%';
+        scanCurrentPort.textContent = 'Current port: -';
+        scanStats.textContent = '0/0 open ports found';
+        scanTime.textContent = 'Elapsed: 0s';
+        
+        // Show progress container
+        scanProgressContainer.classList.remove('hidden');
+        
+        // Disable start button, enable cancel button
+        startScanBtn.disabled = true;
+        autoDetectBtn.disabled = true;
+        cancelScanBtn.disabled = false;
+        startScanBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        autoDetectBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        cancelScanBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        
+        // Record start time
+        scanStartTime = new Date();
+        currentIP = ip;
+        
+        // Start elapsed time counter
+        if (elapsedTimeInterval) {
+            clearInterval(elapsedTimeInterval);
+        }
+        
+        elapsedTimeInterval = setInterval(() => {
+            const now = new Date();
+            const elapsed = Math.round((now - scanStartTime) / 1000);
+            scanTime.textContent = `Elapsed: ${formatTime(elapsed)}`;
+        }, 1000);
+        
+        // Make API request to start scan
+        fetch('/api/ports/scan', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                ip: ip,
+                port_start: parseInt(portStart),
+                port_end: parseInt(portEnd),
+                timeout: parseFloat(timeout),
+                max_threads: parseInt(maxThreads)
+            }),
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'started') {
+                // Start polling for scan status
+                scanProgressLabel.textContent = `Scanning ${ip} (ports ${portStart}-${portEnd})...`;
+                pollScanStatus();
+            } else {
+                showAlert('Failed to start scan: ' + (data.message || 'Unknown error'));
+                resetScanUI();
+            }
+        })
+        .catch(error => {
+            console.error('Error starting scan:', error);
+            showAlert('Failed to start scan: ' + error.message);
+            resetScanUI();
+        });
+    }
+    
+    function formatTime(seconds) {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+        
+        if (hours > 0) {
+            return `${hours}h ${minutes}m ${secs}s`;
+        } else if (minutes > 0) {
+            return `${minutes}m ${secs}s`;
+        } else {
+            return `${secs}s`;
+        }
+    }
+    
+    function pollScanStatus() {
+        // Clear any existing interval
+        if (scanInterval) {
+            clearInterval(scanInterval);
+        }
+        
+        // Set up polling interval
+        scanInterval = setInterval(() => {
+            if (!currentIP) {
+                clearInterval(scanInterval);
+                return;
+            }
+            
+            fetch(`/api/ports/status?ip=${encodeURIComponent(currentIP)}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.status === 'in_progress') {
+                        // Update progress
+                        const progress = data.progress || 0;
+                        scanProgressBar.style.width = `${progress}%`;
+                        scanProgressText.textContent = `${Math.round(progress)}%`;
+                        
+                        if (data.current_port) {
+                            scanCurrentPort.textContent = `Current port: ${data.current_port}`;
+                        }
+                        
+                        scanStats.textContent = `${data.open_ports_count || 0}/${data.scanned_ports || 0} open ports found`;
+                    } else if (data.status === 'completed' || data.status === 'success') {
+                        // Scan completed
+                        clearInterval(scanInterval);
+                        clearInterval(elapsedTimeInterval);
+                        scanProgressBar.style.width = '100%';
+                        scanProgressText.textContent = '100%';
+                        
+                        // Calculate duration
+                        const endTime = new Date();
+                        const duration = Math.round((endTime - scanStartTime) / 1000);
+                        
+                        // Display results
+                        displayResults(data, duration);
+                        
+                        // Reset UI
+                        resetScanUI();
+                        
+                        showAlert('Port scan completed successfully', 'success');
+                    } else if (data.status === 'cancelled') {
+                        // Scan was cancelled
+                        clearInterval(scanInterval);
+                        clearInterval(elapsedTimeInterval);
+                        resetScanUI();
+                        showAlert('Port scan was cancelled');
+                    } else if (data.status === 'error') {
+                        // Error occurred
+                        clearInterval(scanInterval);
+                        clearInterval(elapsedTimeInterval);
+                        resetScanUI();
+                        showAlert('Error during scan: ' + (data.message || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking scan status:', error);
+                    // Don't reset UI on temporary errors, just log them
+                });
+        }, 1000);
+    }
+    
+    function resetScanUI() {
+        scanProgressContainer.classList.add('hidden');
+        startScanBtn.disabled = false;
+        autoDetectBtn.disabled = false;
+        cancelScanBtn.disabled = true;
+        startScanBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        autoDetectBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        cancelScanBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        
+        if (elapsedTimeInterval) {
+            clearInterval(elapsedTimeInterval);
+        }
+        
+        currentIP = null;
+    }
+    
+    function displayResults(data, duration) {
+        // Update summary info
+        resultIP.textContent = data.ip || currentIP || '-';
+        resultDate.textContent = new Date().toLocaleString();
+        resultOpenPorts.textContent = data.open_ports ? data.open_ports.length : 0;
+        resultDuration.textContent = formatTime(duration);
+        
+        // Clear previous results
+        resultsTableBody.innerHTML = '';
+        
+        // Add new results
+        if (data.open_ports && data.open_ports.length > 0) {
+            data.open_ports.forEach(port => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50';
+                
+                // Determine risk level color
+                let riskBadge = '';
+                if (port.risk) {
+                    let riskColor = 'bg-gray-100 text-gray-800';
+                    if (port.risk === 'High') {
+                        riskColor = 'bg-red-100 text-red-800';
+                    } else if (port.risk === 'Medium') {
+                        riskColor = 'bg-yellow-100 text-yellow-800';
+                    } else if (port.risk === 'Low') {
+                        riskColor = 'bg-green-100 text-green-800';
+                    }
+                    riskBadge = `<span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${riskColor}">${port.risk}</span>`;
+                }
+                
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${port.port}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${port.service || 'unknown'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${port.description || ''}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                            ${port.state || 'open'}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        ${riskBadge}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button class="test-connection-btn bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-md" data-port="${port.port}">
+                            Test Connection
+                        </button>
+                    </td>
+                `;
+                
+                resultsTableBody.appendChild(row);
+            });
+            
+            // Add event listeners to test connection buttons
+            document.querySelectorAll('.test-connection-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const port = this.dataset.port;
+                    testConnection(data.ip || currentIP, port);
+                });
+            });
+            
+            // Show results container, hide no results message
+            resultsContainer.classList.remove('hidden');
+            noResultsMessage.classList.add('hidden');
+        } else {
+            // No open ports found
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td colspan="6" class="px-6 py-4 text-center text-gray-500">
+                    No open ports found on ${data.ip || currentIP}.
+                </td>
+            `;
+            resultsTableBody.appendChild(row);
+            
+            // Show results container, hide no results message
+            resultsContainer.classList.remove('hidden');
+            noResultsMessage.classList.add('hidden');
+        }
+    }
+    
+    function testConnection(ip, port) {
+        // Show connection modal
+        connectionModal.classList.remove('hidden');
+        connectionModalTitle.textContent = `Testing Connection to ${ip}:${port}`;
+        connectionLoading.classList.remove('hidden');
+        connectionResult.classList.add('hidden');
+        
+        fetch(`/api/ports/test-connection?ip=${encodeURIComponent(ip)}&port=${port}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                connectionLoading.classList.add('hidden');
+                connectionResult.classList.remove('hidden');
+                
+                if (data.status === 'success') {
+                    connectionStatus.className = 'mb-4 p-3 rounded-md bg-green-100 text-green-800';
+                    connectionStatus.innerHTML = `
+                        <div class="flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                            Connection successful
+                        </div>
+                    `;
+                    connectionService.textContent = data.service || 'Unknown';
+                    connectionDescription.textContent = data.description || 'No description available';
+                    
+                    if (data.banner) {
+                        connectionBannerContainer.classList.remove('hidden');
+                        connectionBanner.textContent = data.banner;
+                    } else {
+                        connectionBannerContainer.classList.add('hidden');
+                    }
+                } else {
+                    connectionStatus.className = 'mb-4 p-3 rounded-md bg-red-100 text-red-800';
+                    connectionStatus.innerHTML = `
+                        <div class="flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                            ${data.message || 'Connection failed'}
+                        </div>
+                    `;
+                    connectionService.textContent = '-';
+                    connectionDescription.textContent = '-';
+                    connectionBannerContainer.classList.add('hidden');
+                }
+            })
+            .catch(error => {
+                console.error('Error testing connection:', error);
+                connectionLoading.classList.add('hidden');
+                connectionResult.classList.remove('hidden');
+                connectionStatus.className = 'mb-4 p-3 rounded-md bg-red-100 text-red-800';
+                connectionStatus.innerHTML = `
+                    <div class="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        Error: ${error.message}
+                    </div>
+                `;
+                connectionService.textContent = '-';
+                connectionDescription.textContent = '-';
+                connectionBannerContainer.classList.add('hidden');
+            });
+    }
+    
+    function cancelScan() {
+        if (!currentIP) return;
+        
+        fetch(`/api/ports/cancel?ip=${encodeURIComponent(currentIP)}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    showAlert('Scan cancelled successfully');
+                    resetScanUI();
+                    clearInterval(scanInterval);
+                    clearInterval(elapsedTimeInterval);
+                } else {
+                    showAlert('Failed to cancel scan: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error cancelling scan:', error);
+                showAlert('Error cancelling scan: ' + error.message);
+            });
+    }
+    
+    function autoDetectPorts() {
+        const ip = document.getElementById('targetIP').value.trim();
+        const timeout = document.getElementById('scanTimeout').value;
+        
+        if (!ip) {
+            showAlert('Please enter a target IP address');
+            return;
+        }
+        
+        // Disable buttons
+        startScanBtn.disabled = true;
+        autoDetectBtn.disabled = true;
+        startScanBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        autoDetectBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        
+        showAlert('Auto-detecting common ports...', 'success');
+        
+        // Record start time
+        scanStartTime = new Date();
+        
+        fetch(`/api/ports/auto-detect?ip=${encodeURIComponent(ip)}&timeout=${timeout}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    // Calculate duration
+                    const endTime = new Date();
+                    const duration = Math.round((endTime - scanStartTime) / 1000);
+                    
+                    // Display results
+                    displayResults(data, duration);
+                    showAlert(`Auto-detection complete. Found ${data.open_ports.length} open ports.`, 'success');
+                } else {
+                    showAlert('Auto-detection failed: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error auto-detecting ports:', error);
+                showAlert('Error auto-detecting ports: ' + error.message);
+            })
+            .finally(() => {
+                // Re-enable buttons
+                startScanBtn.disabled = false;
+                autoDetectBtn.disabled = false;
+                startScanBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                autoDetectBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            });
+    }
+    
+    function exportResults() {
+        if (resultsContainer.classList.contains('hidden')) {
+            showAlert('No results to export');
+            return;
+        }
+        
+        // Get table data
+        const rows = resultsTableBody.querySelectorAll('tr');
+        let csvContent = "data:text/csv;charset=utf-8,";
+        
+        // Add header
+        csvContent += "Port,Service,Description,State,Risk\n";
+        
+        // Add rows
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            if (cells.length >= 5) {
+                const port = cells[0].textContent;
+                const service = cells[1].textContent;
+                const description = cells[2].textContent;
+                const state = cells[3].textContent.trim();
+                const risk = cells[4].textContent.trim();
+                
+                csvContent += `${port},"${service}","${description}",${state},${risk}\n`;
+            }
+        });
+        
+        // Create download link
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `port_scan_${resultIP.textContent}_${new Date().toISOString().slice(0,10)}.csv`);
+        document.body.appendChild(link);
+        
+        // Trigger download
+        link.click();
+        
+        // Clean up
+        document.body.removeChild(link);
+    }
+    
+    function loadScanHistory() {
+        historyList.innerHTML = '<div class="text-center py-4 text-gray-500">Loading scan history...</div>';
+        
+        fetch('/api/ports/history')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === 'success' && data.history && data.history.length > 0) {
+                    historyList.innerHTML = '';
+                    
+                    data.history.forEach(item => {
+                        const historyItem = document.createElement('div');
+                        historyItem.className = 'p-3 bg-gray-50 rounded-md hover:bg-gray-100 cursor-pointer';
+                        
+                        const date = new Date(item.timestamp);
+                        const formattedDate = date.toLocaleString();
+                        
+                        historyItem.innerHTML = `
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <div class="font-medium">${item.ip}</div>
+                                    <div class="text-sm text-gray-500">${formattedDate}</div>
+                                </div>
+                                <div class="flex items-center">
+                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 mr-2">
+                                        ${item.open_ports_count} open ports
+                                    </span>
+                                    <button class="load-history-btn bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-md text-sm" data-ip="${item.ip}">
+                                        Load
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        
+                        historyList.appendChild(historyItem);
+                    });
+                    
+                    // Add event listeners to load buttons
+                    document.querySelectorAll('.load-history-btn').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const ip = this.dataset.ip;
+                            loadScanResults(ip);
+                            historyModal.classList.add('hidden');
+                        });
+                    });
+                } else {
+                    historyList.innerHTML = '<div class="text-center py-4 text-gray-500">No scan history found.</div>';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading scan history:', error);
+                historyList.innerHTML = `<div class="text-center py-4 text-red-500">Error loading scan history: ${error.message}</div>`;
+            });
+    }
+    
+    function loadScanResults(ip) {
+        fetch(`/api/ports/results?ip=${encodeURIComponent(ip)}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    // Display results
+                    displayResults(data, 0);
+                    document.getElementById('targetIP').value = ip;
+                    showAlert(`Loaded scan results for ${ip}`, 'success');
+                } else {
+                    showAlert('Failed to load scan results: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error loading scan results:', error);
+                showAlert('Error loading scan results: ' + error.message);
+            });
+    }
+    
+    // Event Listeners
+    scanForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const ip = document.getElementById('targetIP').value.trim();
+        const portStart = document.getElementById('portStart').value;
+        const portEnd = document.getElementById('portEnd').value;
+        const timeout = document.getElementById('scanTimeout').value;
+        const maxThreads = document.getElementById('maxThreads').value;
+        
+        if (!ip) {
+            showAlert('Please enter a target IP address');
+            return;
+        }
+        
+        startScan(ip, portStart, portEnd, timeout, maxThreads);
+    });
+    
+    autoDetectBtn.addEventListener('click', autoDetectPorts);
+    
+    cancelScanBtn.addEventListener('click', cancelScan);
+    
+    backBtn.addEventListener('click', function() {
+        window.location.href = '/';
+    });
+    
+    exportBtn.addEventListener('click', exportResults);
+    
+    clearResultsBtn.addEventListener('click', function() {
+        resultsContainer.classList.add('hidden');
+        noResultsMessage.classList.remove('hidden');
+    });
+    
+    // Port range preset buttons
+    commonPortsBtn.addEventListener('click', function() {
+        document.getElementById('portStart').value = '1';
+        document.getElementById('portEnd').value = '1024';
+    });
+    
+    webPortsBtn.addEventListener('click', function() {
+        document.getElementById('portStart').value = '80';
+        document.getElementById('portEnd').value = '80';
+        // Add common web ports
+        const webPorts = [80, 443, 8080, 8443];
+        alert('Set to scan common web ports: ' + webPorts.join(', '));
+    });
+    
+    databasePortsBtn.addEventListener('click', function() {
+        document.getElementById('portStart').value = '3306';
+        document.getElementById('portEnd').value = '3306';
+        // Add common database ports
+        const dbPorts = [3306, 5432, 1433];
+        alert('Set to scan common database ports: ' + dbPorts.join(', '));
+    });
+    
+    // Help modal
+    helpBtn.addEventListener('click', function() {
+        helpModal.classList.remove('hidden');
+    });
+    
+    closeHelpModal.addEventListener('click', function() {
+        helpModal.classList.add('hidden');
+    });
+    
+    closeHelpBtn.addEventListener('click', function() {
+        helpModal.classList.add('hidden');
+    });
+    
+    // History modal
+    historyBtn.addEventListener('click', function() {
+        historyModal.classList.remove('hidden');
+        loadScanHistory();
+    });
+    
+    closeHistoryModal.addEventListener('click', function() {
+        historyModal.classList.add('hidden');
+    });
+    
+    closeHistoryBtn.addEventListener('click', function() {
+        historyModal.classList.add('hidden');
+    });
+    
+    // Connection modal
+    closeConnectionModal.addEventListener('click', function() {
+        connectionModal.classList.add('hidden');
+    });
+    
+    closeConnectionBtn.addEventListener('click', function() {
+        connectionModal.classList.add('hidden');
+    });
+    
+    // Close modals when clicking outside
+    window.addEventListener('click', function(e) {
+        if (e.target === helpModal) {
+            helpModal.classList.add('hidden');
+        }
+        if (e.target === historyModal) {
+            historyModal.classList.add('hidden');
+        }
+        if (e.target === connectionModal) {
+            connectionModal.classList.add('hidden');
+        }
+    });
+});
+</script>
+{% endblock %}

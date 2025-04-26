@@ -1,0 +1,166 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="bg-white p-6 rounded-lg shadow">
+    <h2 class="text-xl font-semibold text-gray-800 mb-6">Configure Network Device</h2>
+    
+    <div class="mb-6">
+        <p class="text-gray-600 mb-4">Enter configuration details for the network device. Wi-Fi Adapter IP: {{ wifi_ip | default('Not detected') }}</p>
+    </div>
+
+    <form id="configForm" class="space-y-6">
+        <div>
+            <label for="ip" class="block text-sm font-medium text-gray-700">Device IP Address</label>
+            <input type="text" id="ip" name="ip" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50" placeholder="e.g., 192.168.1.1">
+            <p class="mt-2 text-sm text-gray-500">The IP address of the device to configure (e.g., your router).</p>
+        </div>
+
+        <div>
+            <label for="hostname" class="block text-sm font-medium text-gray-700">Hostname</label>
+            <input type="text" id="hostname" name="hostname" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50" placeholder="e.g., router1" value="router1">
+            <p class="mt-2 text-sm text-gray-500">The hostname to set on the device.</p>
+        </div>
+
+        <div>
+            <label for="interface_name" class="block text-sm font-medium text-gray-700">Interface Name</label>
+            <input type="text" id="interface_name" name="interface_name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50" placeholder="e.g., 1/1/1" value="1/1/1">
+            <p class="mt-2 text-sm text-gray-500">The interface to configure (e.g., 1/1/1 for Nokia routers).</p>
+        </div>
+
+        <div>
+            <label for="interface_description" class="block text-sm font-medium text-gray-700">Interface Description</label>
+            <input type="text" id="interface_description" name="interface_description" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50" placeholder="e.g., Ansible Configured" value="Ansible Configured">
+            <p class="mt-2 text-sm text-gray-500">Description for the interface.</p>
+        </div>
+
+        <div>
+            <label for="use_dhcp" class="block text-sm font-medium text-gray-700">Use DHCP</label>
+            <input type="checkbox" id="use_dhcp" name="use_dhcp" class="mt-1 rounded focus:ring-blue-300">
+            <p class="mt-2 text-sm text-gray-500">Check to configure the interface to obtain IP automatically via DHCP.</p>
+        </div>
+
+        <div id="static_ip_fields" class="space-y-4">
+            <div>
+                <label for="interface_ip" class="block text-sm font-medium text-gray-700">Interface IPv4 Address</label>
+                <input type="text" id="interface_ip" name="interface_ip" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50" placeholder="e.g., 192.168.1.1" value="192.168.1.1">
+                <p class="mt-2 text-sm text-gray-500">IPv4 address for the interface (leave blank if using DHCP).</p>
+            </div>
+
+            <div>
+                <label for="interface_mask" class="block text-sm font-medium text-gray-700">Subnet Mask</label>
+                <input type="text" id="interface_mask" name="interface_mask" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50" placeholder="e.g., 255.255.255.255" value="255.255.255.255">
+                <p class="mt-2 text-sm text-gray-500">Subnet mask for the interface (leave blank if using DHCP).</p>
+            </div>
+        </div>
+
+        <div>
+            <label for="ntp_server" class="block text-sm font-medium text-gray-700">NTP Server</label>
+            <input type="text" id="ntp_server" name="ntp_server" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50" placeholder="e.g., pool.ntp.org" value="pool.ntp.org">
+            <p class="mt-2 text-sm text-gray-500">NTP server address.</p>
+        </div>
+
+        <div>
+            <button type="submit" id="configBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+                Apply Configuration
+            </button>
+        </div>
+    </form>
+
+    <div id="configStatus" class="mt-4 hidden">
+        <div id="statusMessage" class="p-4 rounded-md"></div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const configForm = document.getElementById('configForm');
+    const configBtn = document.getElementById('configBtn');
+    const configStatus = document.getElementById('configStatus');
+    const statusMessage = document.getElementById('statusMessage');
+    const useDhcpCheckbox = document.getElementById('use_dhcp');
+    const staticIpFields = document.getElementById('static_ip_fields');
+
+    // Toggle static IP fields based on DHCP checkbox
+    useDhcpCheckbox.addEventListener('change', function() {
+        staticIpFields.style.display = this.checked ? 'none' : 'block';
+    });
+
+    configForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        applyConfiguration();
+    });
+
+    function applyConfiguration() {
+        const ip = document.getElementById('ip').value.trim();
+        const hostname = document.getElementById('hostname').value.trim();
+        const interface_name = document.getElementById('interface_name').value.trim();
+        const interface_description = document.getElementById('interface_description').value.trim();
+        const interface_ip = document.getElementById('interface_ip').value.trim();
+        const interface_mask = document.getElementById('interface_mask').value.trim();
+        const ntp_server = document.getElementById('ntp_server').value.trim();
+        const use_dhcp = document.getElementById('use_dhcp').checked;
+
+        if (!ip) {
+            showStatus('error', 'Device IP address is required.');
+            return;
+        }
+
+        // Show loading state
+        configBtn.disabled = true;
+        configBtn.textContent = 'Applying...';
+        configStatus.classList.add('hidden');
+
+        // Prepare data
+        const data = {
+            ip: ip,
+            hostname: hostname,
+            interface_name: interface_name,
+            interface_description: interface_description,
+            interface_ip: use_dhcp ? '' : interface_ip,
+            interface_mask: use_dhcp ? '' : interface_mask,
+            ntp_server: ntp_server,
+            use_dhcp: use_dhcp
+        };
+
+        fetch('/api/configure', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok: ' + response.statusText);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'success') {
+                showStatus('success', data.message);
+                configForm.reset();
+                useDhcpCheckbox.checked = false;
+                staticIpFields.style.display = 'block';
+            } else {
+                showStatus('error', data.message || 'Failed to apply configuration');
+            }
+        })
+        .catch(error => {
+            console.error('Error applying configuration:', error);
+            showStatus('error', 'Failed to apply configuration: ' + error.message);
+        })
+        .finally(() => {
+            configBtn.disabled = false;
+            configBtn.textContent = 'Apply Configuration';
+        });
+    }
+
+    function showStatus(type, message) {
+        configStatus.classList.remove('hidden');
+        statusMessage.className = `p-4 rounded-md ${type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`;
+        statusMessage.textContent = message;
+    }
+});
+</script>
+{% endblock %}
+```

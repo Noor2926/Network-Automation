@@ -1,0 +1,237 @@
+
+{% block content %}
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+
+<div class="min-h-screen flex items-center justify-center bg-gray-50">
+    <div class="bg-white p-8 rounded-lg shadow-xl max-w-md w-full border-t-4 border-crimson-600">
+        <!-- NetEngine Logo -->
+        <div class="flex justify-center mb-6">
+            <svg class="w-48 h-16" viewBox="0 0 240 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M40 10L70 70H55L45 45L35 70H20L40 10Z" fill="#DC143C"/>
+                <path d="M75 20H90V70H75V20Z" fill="#DC143C"/>
+                <path d="M100 20H115V55C115 60 117.5 62.5 122.5 62.5C127.5 62.5 130 60 130 55V20H145V55C145 67.5 136.25 71.25 122.5 71.25C108.75 71.25 100 67.5 100 55V20Z" fill="#DC143C"/>
+                <path d="M155 20H200V32.5H170V40H195V52.5H170V57.5H200V70H155V20Z" fill="#3B82F6"/>
+                <path d="M205 20H220V45L240 20H257.5L235 45L260 70H242.5L220 45V70H205V20Z" fill="#3B82F6"/>
+                <path d="M10 20H25V45L45 20H62.5L40 45L65 70H47.5L25 45V70H10V20Z" fill="#DC143C"/>
+                <circle cx="92.5" cy="15" r="7.5" fill="#3B82F6"/>
+            </svg>
+        </div>
+        
+        <h2 class="text-2xl font-bold text-gray-800 text-center mb-6">Network Scanner Access</h2>
+        <p class="text-center text-gray-600 mb-6">Enter your 6-digit security PIN</p>
+        
+        <form id="pinForm" class="space-y-6">
+            <div class="flex justify-center space-x-2">
+                <input type="text" maxlength="1" class="pin-input w-12 h-12 text-center text-xl font-medium border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-crimson-500" required>
+                <input type="text" maxlength="1" class="pin-input w-12 h-12 text-center text-xl font-medium border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-crimson-500" required>
+                <input type="text" maxlength="1" class="pin-input w-12 h-12 text-center text-xl font-medium border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-crimson-500" required>
+                <input type="text" maxlength="1" class="pin-input w-12 h-12 text-center text-xl font-medium border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-crimson-500" required>
+                <input type="text" maxlength="1" class="pin-input w-12 h-12 text-center text-xl font-medium border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-crimson-500" required>
+                <input type="text" maxlength="1" class="pin-input w-12 h-12 text-center text-xl font-medium border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-crimson-500" required>
+            </div>
+            
+            <div class="mt-8">
+                <button type="submit" id="submitPinBtn" class="w-full bg-crimson-600 hover:bg-crimson-700 text-white px-4 py-3 rounded-md flex items-center justify-center font-medium transition-all duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+                    </svg>
+                    Verify PIN
+                </button>
+            </div>
+        </form>
+        
+        <div id="pinStatus" class="mt-4 hidden">
+            <div id="statusMessage" class="p-4 rounded-md"></div>
+        </div>
+        
+        <div class="mt-6 text-center">
+            <a href="#" class="text-blue-600 hover:text-blue-800 text-sm flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Need help with your PIN?
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const pinForm = document.getElementById('pinForm');
+    const pinInputs = document.querySelectorAll('.pin-input');
+    const submitPinBtn = document.getElementById('submitPinBtn');
+    const pinStatus = document.getElementById('pinStatus');
+    const statusMessage = document.getElementById('statusMessage');
+
+    // Focus the first input when page loads
+    pinInputs[0].focus();
+
+    // Auto-focus next input on keypress
+    pinInputs.forEach((input, index) => {
+        input.addEventListener('input', (e) => {
+            // Only allow numbers
+            input.value = input.value.replace(/[^0-9]/g, '');
+            
+            if (input.value.length === 1 && index < pinInputs.length - 1) {
+                pinInputs[index + 1].focus();
+            }
+            
+            // Auto-submit if all fields are filled
+            if (index === pinInputs.length - 1 && input.value.length === 1) {
+                const allFilled = Array.from(pinInputs).every(inp => inp.value.length === 1);
+                if (allFilled) {
+                    setTimeout(() => {
+                        submitPinBtn.click();
+                    }, 300);
+                }
+            }
+        });
+        
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace' && input.value === '' && index > 0) {
+                pinInputs[index - 1].focus();
+            }
+        });
+        
+        // Allow paste functionality for the entire PIN
+        input.addEventListener('paste', (e) => {
+            e.preventDefault();
+            const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+            if (/^\d+$/.test(pastedText) && pastedText.length <= pinInputs.length) {
+                [...pastedText].forEach((char, i) => {
+                    if (i < pinInputs.length) {
+                        pinInputs[i].value = char;
+                    }
+                });
+                if (pastedText.length === pinInputs.length) {
+                    submitPinBtn.click();
+                } else {
+                    pinInputs[Math.min(pastedText.length, pinInputs.length - 1)].focus();
+                }
+            }
+        });
+    });
+
+    pinForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        verifyPin();
+    });
+
+    function verifyPin() {
+        const pin = Array.from(pinInputs).map(input => input.value).join('');
+        if (pin.length !== 6 || !/^\d{6}$/.test(pin)) {
+            showStatus('error', 'Please enter a valid 6-digit PIN.');
+            return;
+        }
+
+        submitPinBtn.disabled = true;
+        const originalBtnContent = submitPinBtn.innerHTML;
+        submitPinBtn.innerHTML = `
+            <svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Verifying...
+        `;
+        pinStatus.classList.add('hidden');
+
+        fetch('/api/verify-pin', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ pin: pin }),
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'success') {
+                showStatus('success', 'PIN verified! Redirecting...');
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 1000);
+            } else {
+                showStatus('error', data.message || 'Invalid PIN. Please try again.');
+                pinInputs.forEach(input => input.value = '');
+                pinInputs[0].focus();
+                
+                // Shake animation on error
+                pinForm.classList.add('animate-shake');
+                setTimeout(() => {
+                    pinForm.classList.remove('animate-shake');
+                }, 500);
+            }
+        })
+        .catch(error => {
+            console.error('Error verifying PIN:', error);
+            showStatus('error', 'Failed to verify PIN: ' + error.message);
+        })
+        .finally(() => {
+            submitPinBtn.disabled = false;
+            submitPinBtn.innerHTML = originalBtnContent;
+        });
+    }
+
+    function showStatus(type, message) {
+        pinStatus.classList.remove('hidden');
+        
+        if (type === 'success') {
+            statusMessage.className = 'p-4 rounded-md bg-green-100 text-green-700 flex items-center';
+            statusMessage.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                </svg>
+                ${message}
+            `;
+        } else {
+            statusMessage.className = 'p-4 rounded-md bg-red-100 text-red-700 flex items-center';
+            statusMessage.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                </svg>
+                ${message}
+            `;
+        }
+    }
+});
+
+// Add Tailwind classes for animation and crimson color
+document.head.insertAdjacentHTML('beforeend', `
+<style>
+    .bg-crimson-600 {
+        background-color: #DC143C;
+    }
+    .bg-crimson-700 {
+        background-color: #B01030;
+    }
+    .border-crimson-600 {
+        border-color: #DC143C;
+    }
+    .focus\:ring-crimson-500:focus {
+        --tw-ring-color: rgba(220, 20, 60, 0.5);
+    }
+    .animate-shake {
+        animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+    }
+    @keyframes shake {
+        10%, 90% {
+            transform: translate3d(-1px, 0, 0);
+        }
+        20%, 80% {
+            transform: translate3d(2px, 0, 0);
+        }
+        30%, 50%, 70% {
+            transform: translate3d(-4px, 0, 0);
+        }
+        40%, 60% {
+            transform: translate3d(4px, 0, 0);
+        }
+    }
+</style>
+`);
+</script>
+{% endblock %}

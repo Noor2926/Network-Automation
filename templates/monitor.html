@@ -1,0 +1,1123 @@
+{% extends 'layout.html' %}
+
+{% block title %}
+Monitor
+{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --primary: #4361ee;
+        --primary-light: #4895ef;
+        --secondary: #3f37c9;
+        --dark: #1b263b;
+        --light: #f8f9fa;
+        --success: #4cc9f0;
+        --warning: #f72585;
+        --info: #560bad;
+        --gray: #6c757d;
+        --gray-light: #e9ecef;
+    }
+
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        background-color: #f5f7fa;
+        color: var(--dark);
+        line-height: 1.6;
+    }
+
+    .dashboard {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+    }
+
+    .container {
+        width: 100%;
+        max-width: 1800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .header {
+        margin-bottom: 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    .header h1 {
+        color: var(--dark);
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin: 0;
+        background: linear-gradient(90deg, var(--primary), var(--success));
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .last-updated {
+        font-size: 0.9rem;
+        color: var(--gray);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .live-indicator {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        background-color: var(--warning);
+        border-radius: 50%;
+        animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+        0% { transform: scale(0.95); opacity: 1; }
+        50% { transform: scale(1.1); opacity: 0.7; }
+        100% { transform: scale(0.95); opacity: 1; }
+    }
+
+    .card-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 25px;
+        margin-bottom: 30px;
+    }
+
+    .card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        padding: 25px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    .card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: linear-gradient(to bottom, var(--primary), var(--success));
+    }
+
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid var(--gray-light);
+    }
+
+    .card-header h2 {
+        color: var(--dark);
+        font-size: 1.4rem;
+        font-weight: 600;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .card-header .icon {
+        width: 24px;
+        height: 24px;
+        color: var(--primary);
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        gap: 6px;
+    }
+
+    .status-badge::before {
+        content: '';
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+    }
+
+    .status-running {
+        background-color: rgba(76, 201, 240, 0.1);
+        color: var(--success);
+    }
+
+    .status-running::before {
+        background-color: var(--success);
+    }
+
+    .status-stopped {
+        background-color: rgba(247, 37, 133, 0.1);
+        color: var(--warning);
+    }
+
+    .status-stopped::before {
+        background-color: var(--warning);
+    }
+
+    .btn-group {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .btn {
+        padding: 10px 18px;
+        border-radius: 8px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: none;
+        font-size: 0.95rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    .btn-primary {
+        background-color: var(--primary);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: var(--secondary);
+        transform: translateY(-2px);
+    }
+
+    .btn-outline {
+        background-color: transparent;
+        border: 1px solid var(--primary);
+        color: var(--primary);
+    }
+
+    .btn-outline:hover {
+        background-color: rgba(67, 97, 238, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 20px;
+    }
+
+    .info-item {
+        margin-bottom: 15px;
+    }
+
+    .info-label {
+        font-size: 0.9rem;
+        color: var(--gray);
+        margin-bottom: 5px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .info-value {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: var(--dark);
+    }
+
+    .progress-container {
+        margin-top: 5px;
+        height: 6px;
+        background-color: var(--gray-light);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+
+    .progress-bar {
+        height: 100%;
+        border-radius: 3px;
+        transition: width 0.5s ease;
+    }
+
+    .cpu-progress {
+        background: linear-gradient(90deg, #f72585, #b5179e);
+    }
+
+    .memory-progress {
+        background: linear-gradient(90deg, #4361ee, #3a0ca3);
+    }
+
+    .disk-progress {
+        background: linear-gradient(90deg, #4cc9f0, #4895ef);
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }
+
+    th {
+        background-color: var(--gray-light);
+        color: var(--dark);
+        font-weight: 600;
+        text-align: left;
+        padding: 15px;
+        font-size: 0.9rem;
+        position: sticky;
+        top: 0;
+    }
+
+    td {
+        padding: 15px;
+        border-bottom: 1px solid var(--gray-light);
+        font-size: 0.95rem;
+        color: var(--dark);
+    }
+
+    tr:hover td {
+        background-color: rgba(67, 97, 238, 0.05);
+    }
+
+    .chart-container {
+        margin-top: 20px;
+        height: 300px;
+        position: relative;
+    }
+
+    .donut-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 200px;
+        position: relative;
+    }
+
+    .donut-label {
+        position: absolute;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--dark);
+    }
+
+    .full-width {
+        grid-column: 1 / -1;
+    }
+
+    .toast-notification {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        padding: 15px 20px;
+        border-radius: 8px;
+        color: white;
+        font-weight: 500;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+        z-index: 1000;
+        transform: translateY(100px);
+        opacity: 0;
+        animation: slideIn 0.3s forwards;
+    }
+
+    .toast-notification.success {
+        background-color: #4cc9f0;
+    }
+
+    .toast-notification.error {
+        background-color: #f72585;
+    }
+
+    .toast-notification.fade-out {
+        animation: fadeOut 0.3s forwards;
+    }
+
+    @keyframes slideIn {
+        to { transform: translateY(0); opacity: 1; }
+    }
+
+    @keyframes fadeOut {
+        to { transform: translateY(100px); opacity: 0; }
+    }
+
+    .processing-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(255, 255, 255, 0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10;
+        border-radius: 16px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+    }
+
+    .processing-overlay.active {
+        opacity: 1;
+        pointer-events: all;
+    }
+
+    .spinner {
+        width: 50px;
+        height: 50px;
+        border: 5px solid rgba(67, 97, 238, 0.2);
+        border-radius: 50%;
+        border-top-color: var(--primary);
+        animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 768px) {
+        .card-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .info-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .btn-group {
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+
+<div class="dashboard">
+    <div class="container">
+        <div class="header">
+            <h1>NetEngine Dashboard</h1>
+            <div class="last-updated">
+                <span class="live-indicator"></span>
+                <span>Live Data Updating</span>
+            </div>
+        </div>
+
+        <div class="card-grid">
+            <!-- Monitoring Status Card -->
+            <div class="card">
+                <div class="processing-overlay" id="monitorProcessing">
+                    <div class="spinner"></div>
+                </div>
+                <div class="card-header">
+                    <h2>
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                        Monitoring Status
+                    </h2>
+                    <span id="monitorStatus" class="status-badge {{ 'status-running' if data.is_monitoring else 'status-stopped' }}">
+                        {{ 'Running' if data.is_monitoring else 'Not Running' }}
+                    </span>
+                </div>
+                <div class="btn-group">
+                    <button onclick="controlMonitor('start')" class="btn btn-primary">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                        </svg>
+                        Start Monitoring
+                    </button>
+                    <button onclick="controlMonitor('stop')" class="btn btn-outline">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="6" y="4" width="4" height="16"></rect>
+                            <rect x="14" y="4" width="4" height="16"></rect>
+                        </svg>
+                        Stop Monitoring
+                    </button>
+                </div>
+            </div>
+
+            <!-- System Resources Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                            <line x1="8" y1="21" x2="16" y2="21"></line>
+                            <line x1="12" y1="17" x2="12" y2="21"></line>
+                        </svg>
+                        System Resources
+                    </h2>
+                </div>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                            </svg>
+                            CPU Usage
+                        </div>
+                        <div class="info-value">{{ data.system_resources.cpu_percent }}%</div>
+                        <div class="progress-container">
+                            <div class="progress-bar cpu-progress" style="width: {{ data.system_resources.cpu_percent }}%"></div>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                                <rect x="6" y="8" width="8" height="3"></rect>
+                                <rect x="6" y="14" width="12" height="2"></rect>
+                            </svg>
+                            Memory Usage
+                        </div>
+                        <div class="info-value">{{ data.system_resources.memory.percent }}%</div>
+                        <div class="progress-container">
+                            <div class="progress-bar memory-progress" style="width: {{ data.system_resources.memory.percent }}%"></div>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                            </svg>
+                            Memory
+                        </div>
+                        <div class="info-value">{{ data.system_resources.memory.used // 1024**2 }} / {{ data.system_resources.memory.total // 1024**2 }} MB</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="2" x2="12" y2="6"></line>
+                                <line x1="12" y1="18" x2="12" y2="22"></line>
+                                <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+                                <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+                                <line x1="2" y1="12" x2="6" y2="12"></line>
+                                <line x1="18" y1="12" x2="22" y2="12"></line>
+                                <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+                                <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
+                            </svg>
+                            Disk Usage
+                        </div>
+                        <div class="info-value">{{ data.system_resources.disk.percent }}%</div>
+                        <div class="progress-container">
+                            <div class="progress-bar disk-progress" style="width: {{ data.system_resources.disk.percent }}%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Network Info Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                        </svg>
+                        Network Information
+                    </h2>
+                </div>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                            </svg>
+                            Hostname
+                        </div>
+                        <div class="info-value">{{ data.network_info.hostname }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                                <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                                <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                                <line x1="6" y1="18" x2="6.01" y2="18"></line>
+                            </svg>
+                            IP Address
+                        </div>
+                        <div class="info-value">{{ data.network_info.ip_address }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="2" y1="12" x2="22" y2="12"></line>
+                                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                            </svg>
+                            Network Range
+                        </div>
+                        <div class="info-value">{{ data.network_info.network_range }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                                <line x1="8" y1="21" x2="16" y2="21"></line>
+                                <line x1="12" y1="17" x2="12" y2="21"></line>
+                            </svg>
+                            Gateway
+                        </div>
+                        <div class="info-value">{{ data.network_info.gateway }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resource Donuts Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
+                            <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
+                        </svg>
+                        Resource Utilization
+                    </h2>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-around;">
+                    <div style="flex: 1; min-width: 200px;">
+                        <div class="donut-container">
+                            <canvas id="cpuDonut"></canvas>
+                            <div class="donut-label" id="cpuDonutLabel">{{ data.system_resources.cpu_percent }}%</div>
+                        </div>
+                        <div style="text-align: center; font-weight: 600; color: var(--dark);">CPU</div>
+                    </div>
+                    <div style="flex: 1; min-width: 200px;">
+                        <div class="donut-container">
+                            <canvas id="memoryDonut"></canvas>
+                            <div class="donut-label" id="memoryDonutLabel">{{ data.system_resources.memory.percent }}%</div>
+                        </div>
+                        <div style="text-align: center; font-weight: 600; color: var(--dark);">Memory</div>
+                    </div>
+                    <div style="flex: 1; min-width: 200px;">
+                        <div class="donut-container">
+                            <canvas id="diskDonut"></canvas>
+                            <div class="donut-label" id="diskDonutLabel">{{ data.system_resources.disk.percent }}%</div>
+                        </div>
+                        <div style="text-align: center; font-weight: 600; color: var(--dark);">Disk</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interfaces Card -->
+            <div class="card full-width">
+                <div class="card-header">
+                    <h2>
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                        </svg>
+                        Network Interfaces
+                    </h2>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Addresses</th>
+                                <th>DNS Servers</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for iface in data.interfaces %}
+                            <tr>
+                                <td>{{ iface.name }}</td>
+                                <td>
+                                    {% for addr in iface.addresses %}
+                                    {{ addr.type }}: {{ addr.address }}<br>
+                                    {% endfor %}
+                                </td>
+                                <td>{{ iface.dns_servers | join(', ') }}</td>
+                                <td>
+                                    <span class="status-badge {{ 'status-running' if iface.status == 'up' else 'status-stopped' }}">
+                                        {{ iface.status }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Connected Hosts Card -->
+            <div class="card full-width">
+                <div class="card-header">
+                    <h2>
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                        Connected Hosts
+                    </h2>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>IP Address</th>
+                                <th>MAC Address</th>
+                                <th>Last Seen</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for host in data.connected_hosts %}
+                            <tr>
+                                <td>{{ host.ip }}</td>
+                                <td>{{ host.mac }}</td>
+                                <td>{{ host.last_seen if host.last_seen else 'Active' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Bandwidth Chart Card -->
+            <div class="card full-width">
+                <div class="card-header">
+                    <h2>
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="20" x2="12" y2="10"></line>
+                            <line x1="18" y1="20" x2="18" y2="4"></line>
+                            <line x1="6" y1="20" x2="6" y2="16"></line>
+                        </svg>
+                        Bandwidth Usage
+                    </h2>
+                </div>
+                <div class="chart-container">
+                    <canvas id="bandwidthChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Latency Chart Card -->
+            <div class="card full-width">
+                <div class="card-header">
+                    <h2>
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        Network Latency
+                    </h2>
+                </div>
+                <div class="chart-container">
+                    <canvas id="latencyChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+<script>
+    // Initialize Charts
+    const bandwidthCtx = document.getElementById('bandwidthChart').getContext('2d');
+    const latencyCtx = document.getElementById('latencyChart').getContext('2d');
+    const cpuDonutCtx = document.getElementById('cpuDonut').getContext('2d');
+    const memoryDonutCtx = document.getElementById('memoryDonut').getContext('2d');
+    const diskDonutCtx = document.getElementById('diskDonut').getContext('2d');
+
+    // Global chart configuration
+    Chart.defaults.font.family = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif";
+    Chart.defaults.color = '#6c757d';
+
+    // Bandwidth Chart
+    const bandwidthChart = new Chart(bandwidthCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [
+                {
+                    label: 'Sent (KB/s)',
+                    data: [],
+                    borderColor: '#4361ee',
+                    backgroundColor: 'rgba(67, 97, 238, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: '#4361ee',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                },
+                {
+                    label: 'Received (KB/s)',
+                    data: [],
+                    borderColor: '#4cc9f0',
+                    backgroundColor: 'rgba(76, 201, 240, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: '#4cc9f0',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        padding: 20,
+                        font: {
+                            size: 14
+                        }
+                    }
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        size: 12
+                    },
+                    padding: 12,
+                    cornerRadius: 8,
+                    usePointStyle: true
+                }
+            },
+            scales: {
+                y: { 
+                    beginAtZero: true, 
+                    title: { 
+                        display: true, 
+                        text: 'KB/s',
+                        font: {
+                            size: 14,
+                            weight: 'bold'
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)',
+                        drawBorder: false
+                    },
+                    ticks: {
+                        padding: 10
+                    }
+                },
+                x: { 
+                    title: { 
+                        display: true, 
+                        text: 'Time',
+                        font: {
+                            size: 14,
+                            weight: 'bold'
+                        }
+                    },
+                    grid: {
+                        display: false,
+                        drawBorder: false
+                    },
+                    ticks: {
+                        padding: 10
+                    }
+                }
+            },
+            animation: {
+                duration: 1000,
+                easing: 'easeOutQuart'
+            }
+        }
+    });
+
+    // Latency Chart
+    const latencyChart = new Chart(latencyCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Latency (ms)',
+                data: [],
+                borderColor: '#f72585',
+                backgroundColor: 'rgba(247, 37, 133, 0.1)',
+                borderWidth: 3,
+                tension: 0.4,
+                fill: true,
+                pointBackgroundColor: '#fff',
+                pointBorderColor: '#f72585',
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        padding: 20,
+                        font: {
+                            size: 14
+                        }
+                    }
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        size: 12
+                    },
+                    padding: 12,
+                    cornerRadius: 8,
+                    usePointStyle: true
+                }
+            },
+            scales: {
+                y: { 
+                    beginAtZero: true, 
+                    title: { 
+                        display: true, 
+                        text: 'ms',
+                        font: {
+                            size: 14,
+                            weight: 'bold'
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)',
+                        drawBorder: false
+                    },
+                    ticks: {
+                        padding: 10
+                    }
+                },
+                x: { 
+                    title: { 
+                        display: true, 
+                        text: 'Time',
+                        font: {
+                            size: 14,
+                            weight: 'bold'
+                        }
+                    },
+                    grid: {
+                        display: false,
+                        drawBorder: false
+                    },
+                    ticks: {
+                        padding: 10
+                    }
+                }
+            },
+            animation: {
+                duration: 1000,
+                easing: 'easeOutQuart'
+            }
+        }
+    });
+
+    // Donut Charts
+    const createDonutChart = (ctx, value, color) => {
+        return new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                datasets: [{
+                    data: [value, 100 - value],
+                    backgroundColor: [color, 'rgba(108, 117, 125, 0.1)'],
+                    borderWidth: 0,
+                    cutout: '80%'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        enabled: false
+                    }
+                },
+                animation: {
+                    animateScale: true,
+                    animateRotate: true
+                }
+            }
+        });
+    };
+
+    const cpuDonutChart = createDonutChart(cpuDonutCtx, {{ data.system_resources.cpu_percent }}, '#f72585');
+    const memoryDonutChart = createDonutChart(memoryDonutCtx, {{ data.system_resources.memory.percent }}, '#4361ee');
+    const diskDonutChart = createDonutChart(diskDonutCtx, {{ data.system_resources.disk.percent }}, '#4cc9f0');
+
+    // Update charts with initial data
+    function updateCharts() {
+        fetch('/monitor/data')
+            .then(response => response.json())
+            .then(data => {
+                // Update last updated time
+                const now = new Date();
+                document.querySelector('.last-updated span:last-child').textContent = 
+                    `Last Updated: ${now.toLocaleTimeString()}`;
+
+                // Update status
+                const statusElement = document.getElementById('monitorStatus');
+                statusElement.textContent = data.is_monitoring ? 'Running' : 'Not Running';
+                statusElement.className = data.is_monitoring ? 'status-badge status-running' : 'status-badge status-stopped';
+
+                // Update resource values
+                document.getElementById('cpuDonutLabel').textContent = `${data.system_resources.cpu_percent}%`;
+                document.getElementById('memoryDonutLabel').textContent = `${data.system_resources.memory.percent}%`;
+                document.getElementById('diskDonutLabel').textContent = `${data.system_resources.disk.percent}%`;
+
+                // Update donut charts
+                cpuDonutChart.data.datasets[0].data = [data.system_resources.cpu_percent, 100 - data.system_resources.cpu_percent];
+                memoryDonutChart.data.datasets[0].data = [data.system_resources.memory.percent, 100 - data.system_resources.memory.percent];
+                diskDonutChart.data.datasets[0].data = [data.system_resources.disk.percent, 100 - data.system_resources.disk.percent];
+                cpuDonutChart.update();
+                memoryDonutChart.update();
+                diskDonutChart.update();
+
+                // Update progress bars
+                document.querySelector('.cpu-progress').style.width = `${data.system_resources.cpu_percent}%`;
+                document.querySelector('.memory-progress').style.width = `${data.system_resources.memory.percent}%`;
+                document.querySelector('.disk-progress').style.width = `${data.system_resources.disk.percent}%`;
+
+                // Update bandwidth chart
+                const bandwidthLabels = data.bandwidth_history.map(h => h.timestamp.slice(11, 19));
+                bandwidthChart.data.labels = bandwidthLabels;
+                bandwidthChart.data.datasets[0].data = data.bandwidth_history.map(h => (h.sent_bps / 1024).toFixed(2));
+                bandwidthChart.data.datasets[1].data = data.bandwidth_history.map(h => (h.recv_bps / 1024).toFixed(2));
+                bandwidthChart.update();
+
+                // Update latency chart
+                const latencyLabels = data.latency_history.map(h => h.timestamp.slice(11, 19));
+                latencyChart.data.labels = latencyLabels;
+                latencyChart.data.datasets[0].data = data.latency_history.map(h => h.latency_ms);
+                latencyChart.update();
+            })
+            .catch(error => {
+                console.error('Error fetching monitor data:', error);
+            });
+    }
+
+    // Control monitoring
+    function controlMonitor(action) {
+        const processingOverlay = document.getElementById('monitorProcessing');
+        processingOverlay.classList.add('active');
+
+        fetch(`/monitor/${action}`, { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                processingOverlay.classList.remove('active');
+                
+                const toast = document.createElement('div');
+                toast.className = `toast-notification ${data.success ? 'success' : 'error'}`;
+                toast.innerHTML = `
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        ${data.success ? 
+                            '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline>' : 
+                            '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>'}
+                    </svg>
+                    <span>${data.message}</span>
+                `;
+                document.body.appendChild(toast);
+                
+                setTimeout(() => {
+                    toast.classList.add('fade-out');
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+                
+                updateCharts();
+            })
+            .catch(error => {
+                processingOverlay.classList.remove('active');
+                console.error('Error controlling monitor:', error);
+                const toast = document.createElement('div');
+                toast.className = 'toast-notification error';
+                toast.innerHTML = `
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    <span>Failed to ${action} monitoring: ${error.message}</span>
+                `;
+                document.body.appendChild(toast);
+                
+                setTimeout(() => {
+                    toast.classList.add('fade-out');
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            });
+    }
+
+    // Initial chart update
+    updateCharts();
+
+    // Periodically update charts
+    setInterval(updateCharts, 5000);
+</script>
+{% endblock %}
